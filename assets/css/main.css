@@ -1,0 +1,128 @@
+/* Base styles */
+:root {
+    --primary-color: #08f;
+    --text-color: #444;
+    --background-color: #fff;
+    --header-height: 60px;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header */
+.site-header {
+    background-color: var(--background-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    z-index: 1000;
+}
+
+.site-header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+}
+
+.site-title {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.site-title a {
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.site-nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    margin-left: 20px;
+}
+
+.site-nav a:hover {
+    color: var(--primary-color);
+}
+
+/* Main content */
+.site-content {
+    margin-top: var(--header-height);
+    min-height: calc(100vh - var(--header-height));
+}
+
+/* Three.js container */
+#container {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+}
+
+/* Blog posts */
+.post {
+    max-width: 800px;
+    margin: 40px auto;
+    background: var(--background-color);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.post-header {
+    margin-bottom: 30px;
+}
+
+.post-title {
+    margin: 0 0 10px;
+    font-size: 2rem;
+}
+
+.post-meta {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.post-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.post-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.post-navigation a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+/* Footer */
+.site-footer {
+    background-color: #f8f8f8;
+    padding: 20px 0;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #666;
+} 

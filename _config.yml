@@ -1,0 +1,21 @@
+title: New Cubes Blog
+description: A blog featuring interactive 3D visualizations
+baseurl: ""
+url: ""
+
+# Build settings
+markdown: kramdown
+permalink: /blog/:year/:month/:day/:title/
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .git/
+  - .github/
+  - .gitignore 

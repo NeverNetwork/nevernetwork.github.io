@@ -1,47 +1,32 @@
 ---
 layout: post
-title: "Welcome to New Cubes Blog"
+title: "Welcome to the Interactive Cubes Blog"
 date: 2024-04-09
 ---
 
-Welcome to the New Cubes Blog! This is a demonstration of how blog posts work with our Three.js visualization.
+# Welcome to the Interactive Cubes Blog!
 
-## About This Blog
+You've found the special red cube! This is your gateway to exploring our blog about Three.js, WebGL, and creative coding.
 
-This blog combines interactive 3D visualizations with written content. The main page features an interactive Three.js visualization of floating cubes, while the blog section contains detailed articles about various topics.
+## About This Project
 
-## Features
+This blog combines interactive 3D visualizations with written content. The main page features thousands of floating cubes, with one special red cube that leads you here. This interaction demonstrates the power of Three.js for creating engaging web experiences.
 
-- Interactive 3D visualization on the main page
-- Clean, modern design
-- Responsive layout
-- Markdown-based blog posts
+## How It Works
 
-## Getting Started
+The cube visualization you just interacted with uses several advanced Three.js features:
 
-To create your own blog post:
+1. **GPU Picking** - To detect which cube you're hovering over
+2. **Custom Shaders** - For efficient rendering of thousands of cubes
+3. **TrackballControls** - For smooth camera movement
+4. **Merged Geometries** - For optimal performance
 
-1. Create a new Markdown file in the `_posts` directory
-2. Use the front matter format shown above
-3. Write your content in Markdown format
-4. Add any images to the `assets` directory
+## Stay Connected
 
-## Code Example
+Keep exploring the cubes and check back for more posts about:
+- Three.js tutorials
+- WebGL optimization tips
+- Creative coding techniques
+- Interactive web experiences
 
-Here's a simple example of how the Three.js visualization works:
-
-```javascript
-import * as THREE from 'three';
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
-
-// Add your 3D objects here
-const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
-```
-
-Stay tuned for more posts about Three.js, web development, and interactive visualizations! 
+Feel free to click around and discover more about 3D graphics on the web! 

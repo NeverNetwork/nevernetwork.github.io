@@ -1,44 +1,30 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2025-04-09T18:48:30+03:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">New Cubes Blog</title><subtitle>A blog featuring interactive 3D visualizations</subtitle><entry><title type="html">Welcome to New Cubes Blog</title><link href="http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog/" rel="alternate" type="text/html" title="Welcome to New Cubes Blog" /><published>2024-04-09T00:00:00+03:00</published><updated>2024-04-09T00:00:00+03:00</updated><id>http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog</id><content type="html" xml:base="http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog/"><![CDATA[<p>Welcome to the New Cubes Blog! This is a demonstration of how blog posts work with our Three.js visualization.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2025-04-09T19:02:45+03:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">New Cubes Blog</title><subtitle>A blog featuring interactive 3D visualizations</subtitle><entry><title type="html">Welcome to the Interactive Cubes Blog</title><link href="http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog/" rel="alternate" type="text/html" title="Welcome to the Interactive Cubes Blog" /><published>2024-04-09T00:00:00+03:00</published><updated>2024-04-09T00:00:00+03:00</updated><id>http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog</id><content type="html" xml:base="http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog/"><![CDATA[<h1 id="welcome-to-the-interactive-cubes-blog">Welcome to the Interactive Cubes Blog!</h1>
 
-<h2 id="about-this-blog">About This Blog</h2>
+<p>You’ve found the special red cube! This is your gateway to exploring our blog about Three.js, WebGL, and creative coding.</p>
 
-<p>This blog combines interactive 3D visualizations with written content. The main page features an interactive Three.js visualization of floating cubes, while the blog section contains detailed articles about various topics.</p>
+<h2 id="about-this-project">About This Project</h2>
 
-<h2 id="features">Features</h2>
+<p>This blog combines interactive 3D visualizations with written content. The main page features thousands of floating cubes, with one special red cube that leads you here. This interaction demonstrates the power of Three.js for creating engaging web experiences.</p>
 
-<ul>
-  <li>Interactive 3D visualization on the main page</li>
-  <li>Clean, modern design</li>
-  <li>Responsive layout</li>
-  <li>Markdown-based blog posts</li>
-</ul>
+<h2 id="how-it-works">How It Works</h2>
 
-<h2 id="getting-started">Getting Started</h2>
-
-<p>To create your own blog post:</p>
+<p>The cube visualization you just interacted with uses several advanced Three.js features:</p>
 
 <ol>
-  <li>Create a new Markdown file in the <code class="language-plaintext highlighter-rouge">_posts</code> directory</li>
-  <li>Use the front matter format shown above</li>
-  <li>Write your content in Markdown format</li>
-  <li>Add any images to the <code class="language-plaintext highlighter-rouge">assets</code> directory</li>
+  <li><strong>GPU Picking</strong> - To detect which cube you’re hovering over</li>
+  <li><strong>Custom Shaders</strong> - For efficient rendering of thousands of cubes</li>
+  <li><strong>TrackballControls</strong> - For smooth camera movement</li>
+  <li><strong>Merged Geometries</strong> - For optimal performance</li>
 </ol>
 
-<h2 id="code-example">Code Example</h2>
+<h2 id="stay-connected">Stay Connected</h2>
 
-<p>Here’s a simple example of how the Three.js visualization works:</p>
+<p>Keep exploring the cubes and check back for more posts about:</p>
+<ul>
+  <li>Three.js tutorials</li>
+  <li>WebGL optimization tips</li>
+  <li>Creative coding techniques</li>
+  <li>Interactive web experiences</li>
+</ul>
 
-<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="o">*</span> <span class="nx">as</span> <span class="nx">THREE</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">three</span><span class="dl">'</span><span class="p">;</span>
-
-<span class="kd">const</span> <span class="nx">scene</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">THREE</span><span class="p">.</span><span class="nc">Scene</span><span class="p">();</span>
-<span class="kd">const</span> <span class="nx">camera</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">THREE</span><span class="p">.</span><span class="nc">PerspectiveCamera</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span> <span class="nb">window</span><span class="p">.</span><span class="nx">innerWidth</span> <span class="o">/</span> <span class="nb">window</span><span class="p">.</span><span class="nx">innerHeight</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">1000</span><span class="p">);</span>
-<span class="kd">const</span> <span class="nx">renderer</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">THREE</span><span class="p">.</span><span class="nc">WebGLRenderer</span><span class="p">();</span>
-
-<span class="c1">// Add your 3D objects here</span>
-<span class="kd">const</span> <span class="nx">geometry</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">THREE</span><span class="p">.</span><span class="nc">BoxGeometry</span><span class="p">();</span>
-<span class="kd">const</span> <span class="nx">material</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">THREE</span><span class="p">.</span><span class="nc">MeshBasicMaterial</span><span class="p">({</span> <span class="na">color</span><span class="p">:</span> <span class="mh">0x00ff00</span> <span class="p">});</span>
-<span class="kd">const</span> <span class="nx">cube</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">THREE</span><span class="p">.</span><span class="nc">Mesh</span><span class="p">(</span><span class="nx">geometry</span><span class="p">,</span> <span class="nx">material</span><span class="p">);</span>
-<span class="nx">scene</span><span class="p">.</span><span class="nf">add</span><span class="p">(</span><span class="nx">cube</span><span class="p">);</span>
-</code></pre></div></div>
-
-<p>Stay tuned for more posts about Three.js, web development, and interactive visualizations!</p>]]></content><author><name></name></author><summary type="html"><![CDATA[Welcome to the New Cubes Blog! This is a demonstration of how blog posts work with our Three.js visualization.]]></summary></entry></feed>
+<p>Feel free to click around and discover more about 3D graphics on the web!</p>]]></content><author><name></name></author><summary type="html"><![CDATA[Welcome to the Interactive Cubes Blog!]]></summary></entry></feed>

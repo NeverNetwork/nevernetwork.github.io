@@ -3,6 +3,12 @@ layout: default
 ---
 
 <div id="container"></div>
+<div id="blog-overlay" class="hidden">
+    <div class="blog-content">
+        <div class="close-button">&times;</div>
+        <div id="blog-text">{{ site.posts | first }}</div>
+    </div>
+</div>
 
 <style>
 #container {
@@ -12,6 +18,57 @@ layout: default
     width: 100%;
     height: 100%;
     z-index: 1;
+}
+
+#blog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#blog-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.blog-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f0f0f0;
+}
+
+.close-button:hover {
+    background: #e0e0e0;
 }
 </style>
 
@@ -35,13 +92,52 @@ layout: default
     let pickingTexture, pickingScene;
     let highlightBox;
     let pickedId = -1;
+    const SPECIAL_CUBE_ID = 42; // We'll make cube #42 special
 
     const pickingData = [];
     const pointer = new THREE.Vector2();
     const offset = new THREE.Vector3(10, 10, 10);
     const clearColor = new THREE.Color();
 
+    // Define blog post mappings
+    const cubeBlogMappings = {
+        42: {
+            title: "Welcome to the Interactive Cubes Blog",
+            url: "{% post_url 2024-04-09-welcome-to-new-cubes-blog %}",
+            color: 0xff0000
+        }
+        // Add more mappings here for other cubes and posts
+    };
+
     init();
+    setupBlogOverlay();
+
+    function setupBlogOverlay() {
+        const overlay = document.getElementById('blog-overlay');
+        const closeButton = document.querySelector('.close-button');
+        
+        closeButton.addEventListener('click', () => {
+            overlay.classList.remove('visible');
+        });
+
+        // Add click event listener to the renderer
+        renderer.domElement.addEventListener('click', () => {
+            if (pickedId === SPECIAL_CUBE_ID) {
+                showBlogPost();
+            }
+        });
+    }
+
+    function showBlogPost() {
+        const blogOverlay = document.getElementById('blog-overlay');
+        const blogText = document.getElementById('blog-text');
+        
+        if (pickedId in cubeBlogMappings) {
+            const post = cubeBlogMappings[pickedId];
+            // The content will be rendered by Jekyll
+            blogOverlay.classList.add('visible');
+        }
+    }
 
     function init() {
         container = document.getElementById('container');
@@ -59,9 +155,9 @@ layout: default
         scene.add(light);
 
         const defaultMaterial = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
+            color: 0xcccccc,
             flatShading: true,
-            vertexColors: true,
+            vertexColors: false,
             shininess: 0
         });
 
@@ -112,14 +208,23 @@ layout: default
         const geometries = [];
         const matrix = new THREE.Matrix4();
         const quaternion = new THREE.Quaternion();
-        const color = new THREE.Color();
+        const defaultColor = new THREE.Color(0xcccccc);
 
         for (let i = 0; i < 5000; i++) {
             const geometry = new THREE.BoxGeometry();
             const position = new THREE.Vector3();
-            position.x = Math.random() * 10000 - 5000;
-            position.y = Math.random() * 6000 - 3000;
-            position.z = Math.random() * 8000 - 4000;
+            
+            if (i in cubeBlogMappings) {
+                // Position blog cubes in a circle around the center
+                const angle = (i / Object.keys(cubeBlogMappings).length) * Math.PI * 2;
+                position.x = Math.cos(angle) * 800;
+                position.y = Math.sin(angle) * 800;
+                position.z = 500;
+            } else {
+                position.x = Math.random() * 10000 - 5000;
+                position.y = Math.random() * 6000 - 3000;
+                position.z = Math.random() * 8000 - 4000;
+            }
 
             const rotation = new THREE.Euler();
             rotation.x = Math.random() * 2 * Math.PI;
@@ -127,18 +232,41 @@ layout: default
             rotation.z = Math.random() * 2 * Math.PI;
 
             const scale = new THREE.Vector3();
-            scale.x = Math.random() * 200 + 100;
-            scale.y = Math.random() * 200 + 100;
-            scale.z = Math.random() * 200 + 100;
+            if (i in cubeBlogMappings) {
+                // Make blog cubes a consistent size
+                scale.x = scale.y = scale.z = 200;
+            } else {
+                scale.x = Math.random() * 200 + 100;
+                scale.y = Math.random() * 200 + 100;
+                scale.z = Math.random() * 200 + 100;
+            }
 
             quaternion.setFromEuler(rotation);
             matrix.compose(position, quaternion, scale);
             geometry.applyMatrix4(matrix);
 
-            applyVertexColors(geometry, color.setHex(Math.random() * 0xffffff));
-            applyId(geometry, i);
-
-            geometries.push(geometry);
+            // Color special cubes according to their mapping
+            if (i in cubeBlogMappings) {
+                const blogMaterial = new THREE.MeshPhongMaterial({
+                    color: cubeBlogMappings[i].color,
+                    flatShading: true,
+                    shininess: 30
+                });
+                applyVertexColors(geometry, new THREE.Color(cubeBlogMappings[i].color));
+                applyId(geometry, i);
+                
+                // Add to both scenes
+                const mainMesh = new THREE.Mesh(geometry, blogMaterial);
+                const pickingMesh = new THREE.Mesh(geometry.clone(), pickingMaterial);
+                
+                scene.add(mainMesh);
+                pickingScene.add(pickingMesh);
+            } else {
+                applyVertexColors(geometry, defaultColor);
+                applyId(geometry, i);
+                geometries.push(geometry);
+            }
+            
             pickingData[i] = {
                 position: position,
                 rotation: rotation,

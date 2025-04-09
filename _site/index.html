@@ -232,16 +232,17 @@
     const clearColor = new THREE.Color();
 
     class Fragment {
-        constructor(geometry, material, position, velocity, rotation) {
+        constructor(geometry, material, position, velocity, rotation, customGravity = gravity) {
             this.mesh = new THREE.Mesh(geometry, material);
             this.mesh.position.copy(position);
             this.velocity = velocity;
             this.rotation = rotation;
+            this.gravity = customGravity;
             scene.add(this.mesh);
         }
 
         update() {
-            this.velocity.add(gravity);
+            this.velocity.add(this.gravity);
             this.mesh.position.add(this.velocity);
             this.mesh.rotation.x += this.rotation.x;
             this.mesh.rotation.y += this.rotation.y;
@@ -325,8 +326,9 @@
                 }
                 vertices.needsUpdate = true;
                 
-                // Create fragments at the cube's position
-                createFragments(data.position, data.scale);
+                // Create fragments with parameters based on cube ID
+                const destructionType = id % 4; // Use cube ID to determine destruction type
+                createFragments(data.position, data.scale, destructionType);
             }
         });
 
@@ -355,46 +357,91 @@
         pickingData[id].destroyed = true;
     }
 
-    function createFragments(position, scale) {
-        // Make fragments smaller - divide by 4 instead of 2
-        const fragmentSize = Math.min(scale.x, scale.y, scale.z) / 4;
-        const fragmentGeometry = new THREE.BoxGeometry(fragmentSize, fragmentSize, fragmentSize);
+    function createFragments(position, scale, destructionType = 0) {
+        // Vary parameters based on destruction type
+        const config = {
+            0: { // Default
+                fragmentCount: 8,
+                fragmentSize: 4,
+                spread: 2,
+                gravity: gravity,
+                upwardForce: 2
+            },
+            1: { // Fast fall, many pieces
+                fragmentCount: 12,
+                fragmentSize: 5,
+                spread: 3,
+                gravity: new THREE.Vector3(0, -0.025, 0),
+                upwardForce: 1.5
+            },
+            2: { // Explosive
+                fragmentCount: 6,
+                fragmentSize: 3,
+                spread: 4,
+                gravity: new THREE.Vector3(0, -0.01, 0),
+                upwardForce: 3
+            },
+            3: { // Implosive
+                fragmentCount: 10,
+                fragmentSize: 6,
+                spread: 1,
+                gravity: new THREE.Vector3(0, -0.02, 0),
+                upwardForce: 1
+            }
+        }[destructionType];
+
+        const fragmentSize = Math.min(scale.x, scale.y, scale.z) / config.fragmentSize;
+        
+        // Array of possible geometries for fragments
+        const geometries = [
+            () => new THREE.TetrahedronGeometry(fragmentSize * 0.8),
+            () => new THREE.OctahedronGeometry(fragmentSize * 0.7),
+            () => new THREE.BoxGeometry(fragmentSize, fragmentSize, fragmentSize),
+            () => new THREE.DodecahedronGeometry(fragmentSize * 0.6),
+            () => new THREE.IcosahedronGeometry(fragmentSize * 0.7)
+        ];
+
         const fragmentMaterial = new THREE.MeshPhongMaterial({
             color: 0xcccccc,
             flatShading: true,
             shininess: 0
         });
 
-        // Create 8 fragments (like splitting a cube into octants)
-        for (let i = 0; i < 8; i++) {
-            const offset = new THREE.Vector3(
-                (i & 1) ? fragmentSize : -fragmentSize,
-                (i & 2) ? fragmentSize : -fragmentSize,
-                (i & 4) ? fragmentSize : -fragmentSize
-            );
-
-            const fragmentPos = position.clone().add(offset.multiplyScalar(0.5));
+        // Create fragments with varying count
+        for (let i = 0; i < config.fragmentCount; i++) {
+            const randomGeometry = geometries[Math.floor(Math.random() * geometries.length)]();
             
-            // Adjust velocity for more realistic physics
-            const velocity = new THREE.Vector3(
-                (Math.random() - 0.5) * 2,    // Less horizontal spread
-                Math.random() * 2,            // Less initial upward velocity
-                (Math.random() - 0.5) * 2
+            const angle = (i / config.fragmentCount) * Math.PI * 2;
+            const radius = fragmentSize * config.spread;
+            
+            const offset = new THREE.Vector3(
+                Math.cos(angle) * radius,
+                Math.random() * radius,
+                Math.sin(angle) * radius
             );
 
-            // Reduce rotation speed
+            const fragmentPos = position.clone().add(offset);
+            
+            // Adjust velocity based on config
+            const velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * config.spread,
+                Math.random() * config.upwardForce,
+                (Math.random() - 0.5) * config.spread
+            );
+
             const rotation = new THREE.Vector3(
-                Math.random() * 0.05,         // Reduced rotation speed
+                Math.random() * 0.05,
                 Math.random() * 0.05,
                 Math.random() * 0.05
             );
 
             fragments.push(new Fragment(
-                fragmentGeometry,
+                randomGeometry,
                 fragmentMaterial,
                 fragmentPos,
                 velocity,
-                rotation
+                rotation,
+                config.gravity // Pass custom gravity to Fragment
             ));
         }
     }

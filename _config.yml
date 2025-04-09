@@ -1,7 +1,8 @@
 title: New Cubes Blog
 description: A blog featuring interactive 3D visualizations
 baseurl: ""
-url: ""
+url: "https://never.network"
+domain: never.network
 
 # Build settings
 markdown: kramdown

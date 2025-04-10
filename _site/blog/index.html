@@ -143,9 +143,6 @@
                 onSecondClick: async (cube, scene, allCubes) => {
                     // First remove any existing lines
                     scene.children = scene.children.filter(child => !(child instanceof THREE.Line));
-                    
-                    // Reset all cubes to gray
-                    resetCubeColors(scene);
 
                     // Find the merged geometry mesh
                     let mergedMesh;
@@ -198,9 +195,12 @@
                         .sort((a, b) => a.distance - b.distance)
                         .slice(0, 10);
 
-                    // Color the closest cubes blue and assign blog posts
-                    const blueColor = new THREE.Color(0x0088ff);
-                    const grayColor = new THREE.Color(0x808080);
+                    // Track which cubes were previously blue
+                    const previousBlue = new Set(
+                        Object.keys(cubeBlogMappings)
+                            .filter(key => key !== '100')
+                            .map(Number)
+                    );
 
                     // Clear any previous blog mappings for blue cubes
                     Object.keys(cubeBlogMappings).forEach(key => {
@@ -209,8 +209,13 @@
                         }
                     });
 
+                    const blueColor = new THREE.Color(0x0088ff);
+                    const defaultColor = new THREE.Color(0xcccccc);
+
+                    // Only update colors for cubes that change state
                     for (let i = 0; i < positions.count; i += 24) {
                         const id = ids[i];
+                        const wasBlue = previousBlue.has(id);
                         const isClosest = closest.some((c, index) => {
                             if (c.id === id) {
                                 // Assign blog post to this cube
@@ -222,13 +227,15 @@
                             }
                             return false;
                         });
-                        
-                        const color = isClosest ? blueColor : grayColor;
-                        
-                        // Color all vertices of this cube
-                        for (let j = 0; j < 24; j++) {
-                            const idx = i + j;
-                            colors.setXYZ(idx, color.r, color.g, color.b);
+
+                        // Only update colors if the cube's state changed
+                        if (wasBlue !== isClosest) {
+                            const color = isClosest ? blueColor : defaultColor;
+                            // Color all vertices of this cube
+                            for (let j = 0; j < 24; j++) {
+                                const idx = i + j;
+                                colors.setXYZ(idx, color.r, color.g, color.b);
+                            }
                         }
 
                         // If it's one of the closest, create a line

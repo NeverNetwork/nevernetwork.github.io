@@ -223,6 +223,9 @@
     let pickingTexture, pickingScene;
     let highlightBox;
     let pickedId = -1;
+    let selectedCubeId = -1;  // Track the currently selected cube
+    let lastInteractionTime = 0;
+    const INTERACTION_TIMEOUT = 500; // Time window for second interaction (ms)
     const fragments = [];
     const gravity = new THREE.Vector3(0, -0.015, 0);
     let lastTime = 0;
@@ -233,7 +236,6 @@
     
     // Auto-rotation variables
     let autoRotating = true;
-    let lastInteractionTime = Date.now();
     const INACTIVITY_TIMEOUT = 10000; // 10 seconds
     const autoRotationSpeed = 0.0002; // Slow rotation speed
     
@@ -297,15 +299,6 @@
         
         closeButton.addEventListener('click', () => {
             overlay.classList.remove('visible');
-        });
-
-        // Add click event listener to the renderer
-        renderer.domElement.addEventListener('click', () => {
-            if (pickedId in cubeBlogMappings) {
-                showBlogPost();
-            } else if (pickedId !== -1) {
-                destroyCube(pickedId);
-            }
         });
     }
 
@@ -636,27 +629,20 @@
         controls.dynamicDampingFactor = 0.3;
 
         // Add zoom constraints
-        controls.minDistance = 1000;  // Minimum zoom distance
-        controls.maxDistance = 3500;  // Maximum zoom distance
+        controls.minDistance = 1000;
+        controls.maxDistance = 3500;
 
         // Add event listeners for user interaction
         controls.addEventListener('start', () => {
             stopAutoRotation();
         });
 
-        renderer.domElement.addEventListener('pointerdown', () => {
-            stopAutoRotation();
-        });
-
-        renderer.domElement.addEventListener('wheel', () => {
-            stopAutoRotation();
-        });
+        // Single event listener for pointer down
+        renderer.domElement.addEventListener('pointerdown', onPointerDown);
+        window.addEventListener('resize', onWindowResize);
 
         stats = new Stats();
         container.appendChild(stats.dom);
-
-        renderer.domElement.addEventListener('pointermove', onPointerMove);
-        window.addEventListener('resize', onWindowResize);
     }
 
     function onWindowResize() {
@@ -665,19 +651,69 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    function onPointerMove(event) {
-        pointer.x = event.clientX;
-        pointer.y = event.clientY;
+    function onPointerDown(event) {
+        event.preventDefault();
+        stopAutoRotation();
+        
+        // Get pointer coordinates
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        // Perform picking
         pick();
+
+        const currentTime = Date.now();
+        
+        if (pickedId !== -1 && !pickingData[pickedId]?.destroyed) {
+            if (pickedId === selectedCubeId && currentTime - lastInteractionTime < INTERACTION_TIMEOUT) {
+                // Second click on the same cube - perform action
+                if (pickedId in cubeBlogMappings) {
+                    // For blog cubes, show the post
+                    showBlogPost();
+                } else {
+                    // For regular cubes, destroy them
+                    destroyCube(pickedId);
+                }
+                // Reset selection
+                selectedCubeId = -1;
+                highlightBox.visible = false;
+            } else {
+                // First click - select the cube
+                selectedCubeId = pickedId;
+                lastInteractionTime = currentTime;
+                
+                // Show highlight box
+                const data = pickingData[pickedId];
+                highlightBox.visible = true;
+                highlightBox.position.copy(data.position);
+                highlightBox.rotation.copy(data.rotation);
+                const highlightScale = data.scale.clone().multiplyScalar(1.1);
+                highlightBox.scale.copy(highlightScale);
+            }
+        } else {
+            // Clicked empty space or destroyed cube - deselect
+            selectedCubeId = -1;
+            highlightBox.visible = false;
+        }
     }
 
     function pick() {
         // render the picking scene off-screen
         const dpr = window.devicePixelRatio;
+        
+        // Calculate pixel coordinates
+        const x = Math.floor((pointer.x + 1) * renderer.domElement.width / 2);
+        const y = Math.floor((-pointer.y + 1) * renderer.domElement.height / 2);
+
+        // Set camera view to look at just that pixel
         camera.setViewOffset(
-            renderer.domElement.width, renderer.domElement.height,
-            Math.floor(pointer.x * dpr), Math.floor(pointer.y * dpr),
-            1, 1
+            renderer.domElement.width,
+            renderer.domElement.height,
+            x,
+            y,
+            1,
+            1
         );
 
         renderer.setRenderTarget(pickingTexture);
@@ -693,18 +729,6 @@
 
         const id = pixelBuffer[0];
         pickedId = id;
-        
-        if (id !== -1 && id !== undefined && id !== null && !pickingData[id]?.destroyed) {
-            const data = pickingData[id];
-            if (data) {
-                highlightBox.position.copy(data.position);
-                highlightBox.rotation.copy(data.rotation);
-                highlightBox.scale.copy(data.scale).multiplyScalar(1.2);
-                highlightBox.visible = true;
-            }
-        } else {
-            highlightBox.visible = false;
-        }
     }
 
     function animate(time) {

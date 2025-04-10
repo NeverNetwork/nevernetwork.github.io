@@ -19,6 +19,9 @@ const pickingData = [];
 const pointer = new THREE.Vector2();
 const offset = new THREE.Vector3(10, 10, 10);
 const clearColor = new THREE.Color();
+let lastClickedCube = null;
+let lastClickTime = 0;
+const DOUBLE_CLICK_DELAY = 500; // ms
 
 // Export constants and mappings
 export const cubeBlogMappings = {};
@@ -27,7 +30,7 @@ export const INACTIVITY_TIMEOUT = 10000;
 export const AUTO_ROTATION_SPEED = 0.2;
 
 // Export functions
-export { init, setupOverlays, startAutoRotation, stopAutoRotation, closeMenu, checkInactivity, showBlogPost, destroyCube, showCubeMenu };
+export { init, setupOverlays, startAutoRotation, stopAutoRotation, closeMenu, checkInactivity, showBlogPost, destroyCube, showCubeMenu, resetCubeColors };
 
 function startAutoRotation() {
     autoRotating = true;
@@ -347,7 +350,7 @@ function init() {
     const defaultMaterial = new THREE.MeshPhongMaterial({
         color: 0xcccccc,
         flatShading: true,
-        vertexColors: false,
+        vertexColors: true,
         shininess: 0
     });
 
@@ -552,11 +555,26 @@ function onPointerDown(event) {
     if (pickedId === selectedCubeId && currentTime - lastInteractionTime < INTERACTION_TIMEOUT) {
         // Second click on the same cube
         if (pickedId in cubeBlogMappings) {
-            const clickPosition = {
-                x: event.clientX,
-                y: event.clientY
-            };
-            showCubeMenu(clickPosition);
+            const mapping = cubeBlogMappings[pickedId];
+            if (mapping.onSecondClick) {
+                // Find all meshes in the scene
+                const allCubes = [];
+                scene.traverse((object) => {
+                    if (object.isMesh && object.geometry.attributes.id) {
+                        allCubes.push(object);
+                    }
+                });
+                
+                // Get the clicked cube
+                const clickedCube = scene.getObjectById(pickedId) || allCubes.find(cube => 
+                    cube.geometry.attributes.id.array[0] === pickedId
+                );
+                
+                if (clickedCube) {
+                    mapping.onSecondClick(clickedCube, scene, allCubes);
+                }
+            }
+            closeMenu(); // Close any open menu
         } else {
             destroyCube(pickedId);
             closeMenu();
@@ -576,6 +594,15 @@ function onPointerDown(event) {
         highlightBox.rotation.copy(data.rotation);
         const highlightScale = data.scale.clone().multiplyScalar(1.1);
         highlightBox.scale.copy(highlightScale);
+        
+        // Show menu only on first click for blog cubes
+        if (pickedId in cubeBlogMappings) {
+            const clickPosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
+            showCubeMenu(clickPosition);
+        }
     }
 }
 
@@ -764,4 +791,45 @@ function showCubeMenu(screenPosition) {
     
     // Make menu visible
     menu.style.opacity = '1';
+}
+
+function onCubeClick(event) {
+    const currentTime = Date.now();
+    const cube = event.object;
+    const cubeId = cube.userData.id;
+    const mapping = cubeBlogMappings[cubeId];
+
+    if (mapping) {
+        if (cube === lastClickedCube && (currentTime - lastClickTime) < DOUBLE_CLICK_DELAY) {
+            // Second click on the same cube
+            if (mapping.onSecondClick) {
+                mapping.onSecondClick(cube, scene, cubes);
+            }
+        } else {
+            // First click
+            showCubeMenu(screenPosition);
+        }
+
+        lastClickedCube = cube;
+        lastClickTime = currentTime;
+    }
+}
+
+// Add this new function to manage cube colors
+function resetCubeColors(scene) {
+    scene.traverse((object) => {
+        if (object.isMesh && object.geometry.attributes.id) {
+            const ids = object.geometry.attributes.id.array;
+            const colors = object.geometry.attributes.color;
+            
+            // Reset all cubes to gray except the green cube (ID 100)
+            for (let i = 0; i < ids.length; i++) {
+                if (ids[i] !== 100) {
+                    const color = new THREE.Color(0x808080);
+                    colors.setXYZ(i, color.r, color.g, color.b);
+                }
+            }
+            colors.needsUpdate = true;
+        }
+    });
 } 

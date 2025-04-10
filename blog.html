@@ -3,24 +3,152 @@ layout: default
 title: Blog
 ---
 
-<div class="blog-index">
-    <h1>Blog Posts</h1>
-    
-    <div class="post-list">
-        {% for post in site.posts %}
-        <article class="post-preview">
-            <h2><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h2>
-            <time datetime="{{ post.date | date_to_xmlschema }}">
-                {{ post.date | date: "%B %-d, %Y" }}
-            </time>
-            <div class="post-excerpt">
-                {{ post.excerpt | strip_html | truncatewords: 50 }}
-            </div>
-            <a href="{{ post.url | relative_url }}" class="read-more">Read more &raquo;</a>
-        </article>
-        {% endfor %}
+<body>
+    <div id="container"></div>
+    <div id="blog-overlay" class="hidden">
+        <div class="blog-content">
+            <div class="close-button">&times;</div>
+            <div id="blog-text"></div>
+        </div>
     </div>
-</div>
+
+    <button class="hamburger-btn">
+        <span>☰</span>
+    </button>
+
+    <div class="slide-menu">
+        <a href="/">Home</a>
+        <a href="/blog">Blog</a>
+    </div>
+
+    <div class="menu-overlay"></div>
+
+    <div id="cube-menu">
+        <div class="menu-title"></div>
+        <div class="menu-brief"></div>
+        <div class="menu-metadata">
+            <span class="author"></span>
+            <span class="date"></span>
+        </div>
+        <button id="read-button">Read</button>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { init, setupOverlays, cubeBlogMappings, resetCubeColors } from '/assets/js/cubes.js';
+
+        // Set up the green cube mapping
+        Object.assign(cubeBlogMappings, {
+            100: {  // Using ID 100 for the green cube
+                title: "Explore Cube Connections",
+                brief: "Click again to reveal connected cubes",
+                author: "Interactive Demo",
+                date: new Date().toLocaleDateString(),
+                url: "#",
+                color: 0x00ff00,  // Green color
+                onSecondClick: async (cube, scene, allCubes) => {
+                    // First remove any existing lines
+                    scene.children = scene.children.filter(child => !(child instanceof THREE.Line));
+                    
+                    // Reset all cubes to gray
+                    resetCubeColors(scene);
+
+                    // Find the merged geometry mesh
+                    let mergedMesh;
+                    scene.traverse((object) => {
+                        if (object.isMesh && object.geometry.attributes.id && 
+                            object.geometry.attributes.id.array.length > 100) {
+                            mergedMesh = object;
+                        }
+                    });
+
+                    if (!mergedMesh) return;
+
+                    const ids = mergedMesh.geometry.attributes.id.array;
+                    const colors = mergedMesh.geometry.attributes.color;
+                    const positions = mergedMesh.geometry.attributes.position;
+
+                    // Get center positions of all cubes
+                    const cubeCenters = new Map();
+                    for (let i = 0; i < positions.count; i += 24) {
+                        const id = ids[i];
+                        if (id !== 100) { // Skip the green cube
+                            let centerX = 0, centerY = 0, centerZ = 0;
+                            // Calculate center from all vertices of the cube
+                            for (let j = 0; j < 24; j++) {
+                                centerX += positions.array[(i + j) * 3];
+                                centerY += positions.array[(i + j) * 3 + 1];
+                                centerZ += positions.array[(i + j) * 3 + 2];
+                            }
+                            centerX /= 24;
+                            centerY /= 24;
+                            centerZ /= 24;
+                            cubeCenters.set(id, new THREE.Vector3(centerX, centerY, centerZ));
+                        }
+                    }
+
+                    // Calculate distances to green cube
+                    const distances = Array.from(cubeCenters.entries()).map(([id, center]) => ({
+                        id,
+                        distance: center.distanceTo(cube.position)
+                    }));
+
+                    // Get 10 closest cubes
+                    const closest = distances
+                        .sort((a, b) => a.distance - b.distance)
+                        .slice(0, 10);
+
+                    // Color the closest cubes blue
+                    const blueColor = new THREE.Color(0x0088ff);
+                    const grayColor = new THREE.Color(0x808080);
+
+                    for (let i = 0; i < positions.count; i += 24) {
+                        const id = ids[i];
+                        const isClosest = closest.some(c => c.id === id);
+                        const color = isClosest ? blueColor : grayColor;
+                        
+                        // Color all vertices of this cube
+                        for (let j = 0; j < 24; j++) {
+                            const idx = i + j;
+                            colors.setXYZ(idx, color.r, color.g, color.b);
+                        }
+
+                        // If it's one of the closest, create a line
+                        if (isClosest) {
+                            const center = cubeCenters.get(id);
+                            const geometry = new THREE.BufferGeometry().setFromPoints([
+                                cube.position,
+                                center
+                            ]);
+                            const material = new THREE.LineBasicMaterial({ 
+                                color: 0xffffff,
+                                opacity: 0.5,
+                                transparent: true
+                            });
+                            const line = new THREE.Line(geometry, material);
+                            scene.add(line);
+                        }
+                    }
+                    colors.needsUpdate = true;
+                }
+            }
+        });
+
+        // Initialize the scene and setup overlays
+        init();
+        setupOverlays();
+    </script>
+</body>
+</html>
 
 <style>
 .blog-index {

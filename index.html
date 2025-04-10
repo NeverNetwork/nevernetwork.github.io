@@ -1,18 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Cubes Blog</title>
-    <link rel="stylesheet" href="/assets/css/styles.css">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-    </style>
-</head>
+---
+layout: default
+title: Main
+---
+
 <body>
     <div id="container"></div>
     <div id="blog-overlay" class="hidden">
@@ -21,6 +11,23 @@
             <div id="blog-text"></div>
         </div>
     </div>
+
+    <!-- Process blog post data -->
+    {% assign target_post = "2024-04-09-welcome-to-new-cubes-blog.md" %}
+    {% for post in site.posts %}
+        {% assign post_path = post.path | split: "/" | last %}
+        {% if post_path contains target_post %}
+            <script id="post-data" type="application/json">
+            {
+                "title": {{ post.title | jsonify }},
+                "author": {{ post.author | jsonify }},
+                "date": {{ post.date | date: "%B %-d, %Y" | jsonify }},
+                "brief": {{ post.brief | jsonify }},
+                "url": {{ post.url | relative_url | jsonify }}
+            }
+            </script>
+        {% endif %}
+    {% endfor %}
 
     <button class="hamburger-btn">
         <span>☰</span>
@@ -56,16 +63,30 @@
         import { init, setupOverlays, cubeBlogMappings } from '/assets/js/cubes.js';
 
         // Set up blog post mappings
-        Object.assign(cubeBlogMappings, {
-            42: {
-                title: "Welcome to the Interactive Cubes Blog",
-                author: "Sergy S.",
-                date: "April 9, 2024",
-                brief: "Explore the world of interactive 3D web graphics through this unique cube-based interface. Click to discover more about Three.js and creative coding.",
-                url: "/blog/2024/04/09/welcome-to-new-cubes-blog/",
-                color: 0xff0000
+        const postDataElement = document.getElementById('post-data');
+        console.log('Post data element:', postDataElement);
+        if (postDataElement) {
+            try {
+                const postData = JSON.parse(postDataElement.textContent.trim());
+                console.log('Post data:', postData);
+                Object.assign(cubeBlogMappings, {
+                    42: {
+                        ...postData,
+                        color: 0xff0000
+                    }
+                });
+                console.log('Updated cubeBlogMappings:', cubeBlogMappings);
+            } catch (error) {
+                console.error('Error parsing post data:', error);
             }
-        });
+        } else {
+            console.warn('Post data element not found');
+            // Debug info
+            const debugElement = document.getElementById('debug-info');
+            if (debugElement) {
+                console.log('Debug info:', JSON.parse(debugElement.textContent));
+            }
+        }
 
         // Initialize the scene and setup overlays
         init();

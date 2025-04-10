@@ -770,20 +770,41 @@ function showCubeMenu(screenPosition) {
     const isMobile = viewportWidth <= 768;
     const menuRect = menu.getBoundingClientRect();
     
-    // Position menu
-    if (isMobile) {
-        menu.style.left = '50%';
-        menu.style.top = '50%';
-        menu.style.transform = 'translate(-50%, -50%)';
+    const MARGIN = 20; // Minimum distance from viewport edges
+    const OFFSET = 15; // Increased distance to offset from click position
+    
+    // Determine if click is in the upper or lower half of the screen
+    const isUpperHalf = screenPosition.y < viewportHeight / 2;
+    
+    // Position menu based on click location
+    let left = screenPosition.x - menuRect.width / 2;
+    let top;
+    
+    if (isUpperHalf) {
+        // Click is in upper half, show menu below
+        top = screenPosition.y + OFFSET;
     } else {
-        // Position near the cube but ensure it stays within viewport
-        let left = Math.min(Math.max(screenPosition.x, 10), viewportWidth - menuRect.width - 10);
-        let top = Math.min(Math.max(screenPosition.y, 10), viewportHeight - menuRect.height - 10);
-        
-        menu.style.left = `${left}px`;
-        menu.style.top = `${top}px`;
-        menu.style.transform = 'none';
+        // Click is in lower half, show menu above
+        top = screenPosition.y - menuRect.height - OFFSET;
     }
+    
+    // If menu would go outside viewport horizontally, adjust position
+    if (left < MARGIN) {
+        left = MARGIN;
+    } else if (left + menuRect.width > viewportWidth - MARGIN) {
+        left = viewportWidth - menuRect.width - MARGIN;
+    }
+    
+    // If menu would go outside viewport vertically, flip position
+    if (top < MARGIN) {
+        top = screenPosition.y + OFFSET; // Flip to below
+    } else if (top + menuRect.height > viewportHeight - MARGIN) {
+        top = screenPosition.y - menuRect.height - OFFSET; // Flip to above
+    }
+    
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.style.transform = 'none';
     
     // Show menu with fade in
     menu.style.opacity = '1';

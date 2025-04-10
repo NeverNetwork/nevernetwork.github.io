@@ -155,32 +155,42 @@
     display: none;
     background: rgba(0, 0, 0, 0.9);
     color: white;
-    padding: 20px;
+    padding: 12px 15px;
     border-radius: 8px;
-    max-width: 300px;
+    width: auto;
+    min-width: 180px;
+    max-width: 240px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     z-index: 1000;
 }
 
 #cube-menu .menu-title {
-    margin: 0 0 10px 0;
-    font-size: 1.2em;
-    padding-right: 30px; /* Make space for close button */
+    margin: 0 0 8px 0;
+    font-size: 1.1em;
+    font-weight: 500;
+    padding-right: 25px;
+}
+
+#cube-menu .menu-brief {
+    font-size: 0.9em;
+    margin: 0;
+    line-height: 1.4;
+    opacity: 0.9;
 }
 
 #cube-menu .menu-close {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 24px;
-    height: 24px;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
     background: #ffffff;
     color: #000000;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
@@ -193,13 +203,6 @@
     background: #f0f0f0;
 }
 
-#cube-menu .menu-brief {
-    font-size: 14px;
-    margin-bottom: 12px;
-    line-height: 1.5;
-    opacity: 0.9;
-}
-
 #cube-menu .menu-metadata {
     font-size: 12px;
     margin-bottom: 15px;
@@ -210,20 +213,17 @@
 
 @media (max-width: 768px) {
     #cube-menu {
-        width: calc(100% - 40px);
-        max-width: 350px;
-        min-width: unset;
-        left: 20px;
-        right: 20px;
-        margin: 0 auto;
+        min-width: 160px;
+        max-width: 220px;
+        padding: 10px 12px;
     }
     
-    .post-title {
-        font-size: 2rem;
+    #cube-menu .menu-title {
+        font-size: 1em;
     }
     
-    .post-content {
-        font-size: 1rem;
+    #cube-menu .menu-brief {
+        font-size: 0.85em;
     }
 }
 

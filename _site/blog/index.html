@@ -131,11 +131,124 @@
             }
         ];
 
+        // Track state of blue cubes
+        let blueCubesState = {
+            isShowing: false,
+            connectedCubes: new Set(),
+            positions: new Map(),
+            articleAssignments: new Map() // Track which article is assigned to which cube
+        };
+
+        // Function to find and allocate a new cube when one is destroyed
+        function reallocateDestroyedCube(destroyedId, scene) {
+            // If the destroyed cube wasn't one of our allocated cubes, ignore
+            if (!blueCubesState.articleAssignments.has(destroyedId)) {
+                return;
+            }
+
+            // Get the article that was assigned to the destroyed cube
+            const articleIndex = blueCubesState.articleAssignments.get(destroyedId);
+            
+            // Find the merged geometry mesh
+            const mergedMesh = scene.children.find(child => 
+                child.isMesh && child.geometry.attributes.id &&
+                child.geometry.attributes.id.array.length > 100
+            );
+
+            if (!mergedMesh) return;
+
+            const ids = mergedMesh.geometry.attributes.id.array;
+            const colors = mergedMesh.geometry.attributes.color;
+            const positions = mergedMesh.geometry.attributes.position;
+
+            // Get the green cube's position for distance calculation
+            const greenCubeData = pickingData[100];
+            if (!greenCubeData) return;
+            const greenCubePosition = new THREE.Vector3().copy(greenCubeData.position);
+
+            // Get center positions of all available cubes
+            const cubeCenters = new Map();
+            for (let i = 0; i < positions.count; i += 24) {
+                const id = ids[i];
+                // Skip green cube, already allocated cubes, and destroyed cubes
+                if (id !== 100 && !blueCubesState.connectedCubes.has(id) && !pickingData[id]?.destroyed) {
+                    let centerX = 0, centerY = 0, centerZ = 0;
+                    for (let j = 0; j < 24; j++) {
+                        centerX += positions.array[(i + j) * 3];
+                        centerY += positions.array[(i + j) * 3 + 1];
+                        centerZ += positions.array[(i + j) * 3 + 2];
+                    }
+                    centerX /= 24;
+                    centerY /= 24;
+                    centerZ /= 24;
+                    cubeCenters.set(id, new THREE.Vector3(centerX, centerY, centerZ));
+                }
+            }
+
+            // Find the closest available cube
+            let closestId = null;
+            let minDistance = Infinity;
+            cubeCenters.forEach((center, id) => {
+                const distance = center.distanceTo(greenCubePosition);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestId = id;
+                }
+            });
+
+            if (closestId === null) return;
+
+            // Allocate the new cube
+            const blueColor = new THREE.Color(0x0088ff);
+            
+            // Color the new cube if cubes are currently showing
+            if (blueCubesState.isShowing) {
+                for (let i = 0; i < positions.count; i += 24) {
+                    const id = ids[i];
+                    if (id === closestId) {
+                        for (let j = 0; j < 24; j++) {
+                            const idx = i + j;
+                            colors.setXYZ(idx, blueColor.r, blueColor.g, blueColor.b);
+                        }
+                        break;
+                    }
+                }
+                colors.needsUpdate = true;
+
+                // Create connection line
+                const center = cubeCenters.get(closestId);
+                const geometry = new THREE.BufferGeometry().setFromPoints([
+                    greenCubePosition,
+                    center
+                ]);
+                const material = new THREE.LineBasicMaterial({ 
+                    color: 0xffffff,
+                    opacity: 0.5,
+                    transparent: true
+                });
+                const line = new THREE.Line(geometry, material);
+                scene.add(line);
+            }
+
+            // Update state
+            blueCubesState.connectedCubes.delete(destroyedId);
+            blueCubesState.connectedCubes.add(closestId);
+            blueCubesState.articleAssignments.delete(destroyedId);
+            blueCubesState.articleAssignments.set(closestId, articleIndex);
+
+            // Update blog mappings
+            delete cubeBlogMappings[destroyedId];
+            cubeBlogMappings[closestId] = {
+                ...numberedPosts[articleIndex],
+                color: 0x0088ff
+            };
+        }
+
         // Set up the green cube mapping
         Object.assign(cubeBlogMappings, {
             100: {  // Using ID 100 for the green cube
                 title: "Explore Cube Connections",
-                brief: "Click again to reveal connected cubes",
+                brief: "Click to toggle connected cubes",
                 author: "Interactive Demo",
                 date: new Date().toLocaleDateString(),
                 url: "#",
@@ -144,119 +257,142 @@
                     // First remove any existing lines
                     scene.children = scene.children.filter(child => !(child instanceof THREE.Line));
 
-                    // Find the merged geometry mesh
-                    let mergedMesh;
-                    scene.traverse((object) => {
-                        if (object.isMesh && object.geometry.attributes.id && 
-                            object.geometry.attributes.id.array.length > 100) {
-                            mergedMesh = object;
-                        }
-                    });
+                    if (blueCubesState.isShowing) {
+                        // Hide blue cubes
+                        const mergedMesh = scene.children.find(child => 
+                            child.isMesh && child.geometry.attributes.id &&
+                            child.geometry.attributes.id.array.length > 100
+                        );
 
-                    if (!mergedMesh) return;
+                        if (mergedMesh) {
+                            const ids = mergedMesh.geometry.attributes.id.array;
+                            const colors = mergedMesh.geometry.attributes.color;
+                            const defaultColor = new THREE.Color(0xcccccc);
 
-                    const ids = mergedMesh.geometry.attributes.id.array;
-                    const colors = mergedMesh.geometry.attributes.color;
-                    const positions = mergedMesh.geometry.attributes.position;
-
-                    // Get center positions of all cubes
-                    const cubeCenters = new Map();
-                    for (let i = 0; i < positions.count; i += 24) {
-                        const id = ids[i];
-                        if (id !== 100) { // Skip the green cube
-                            let centerX = 0, centerY = 0, centerZ = 0;
-                            // Calculate center from all vertices of the cube
-                            for (let j = 0; j < 24; j++) {
-                                centerX += positions.array[(i + j) * 3];
-                                centerY += positions.array[(i + j) * 3 + 1];
-                                centerZ += positions.array[(i + j) * 3 + 2];
+                            // Reset colors of blue cubes to default
+                            for (let i = 0; i < ids.length; i += 24) {
+                                const id = ids[i];
+                                if (blueCubesState.connectedCubes.has(id)) {
+                                    for (let j = 0; j < 24; j++) {
+                                        const idx = i + j;
+                                        colors.setXYZ(idx, defaultColor.r, defaultColor.g, defaultColor.b);
+                                    }
+                                }
                             }
-                            centerX /= 24;
-                            centerY /= 24;
-                            centerZ /= 24;
-                            cubeCenters.set(id, new THREE.Vector3(centerX, centerY, centerZ));
+                            colors.needsUpdate = true;
                         }
-                    }
 
-                    // Get the green cube's position from pickingData
-                    const greenCubeData = pickingData[100];
-                    if (!greenCubeData) return;
-                    
-                    const greenCubePosition = new THREE.Vector3().copy(greenCubeData.position);
-
-                    // Calculate distances to green cube
-                    const distances = Array.from(cubeCenters.entries()).map(([id, center]) => ({
-                        id,
-                        distance: center.distanceTo(greenCubePosition)
-                    }));
-
-                    // Get 10 closest cubes
-                    const closest = distances
-                        .sort((a, b) => a.distance - b.distance)
-                        .slice(0, 10);
-
-                    // Track which cubes were previously blue
-                    const previousBlue = new Set(
-                        Object.keys(cubeBlogMappings)
-                            .filter(key => key !== '100')
-                            .map(Number)
-                    );
-
-                    // Clear any previous blog mappings for blue cubes
-                    Object.keys(cubeBlogMappings).forEach(key => {
-                        if (key !== '100') {
-                            delete cubeBlogMappings[key];
-                        }
-                    });
-
-                    const blueColor = new THREE.Color(0x0088ff);
-                    const defaultColor = new THREE.Color(0xcccccc);
-
-                    // Only update colors for cubes that change state
-                    for (let i = 0; i < positions.count; i += 24) {
-                        const id = ids[i];
-                        const wasBlue = previousBlue.has(id);
-                        const isClosest = closest.some((c, index) => {
-                            if (c.id === id) {
-                                // Assign blog post to this cube
-                                cubeBlogMappings[id] = {
-                                    ...numberedPosts[index],
-                                    color: 0x0088ff
-                                };
-                                return true;
+                        // Clear the blog mappings for blue cubes
+                        blueCubesState.connectedCubes.forEach(id => {
+                            if (id !== 100) {
+                                delete cubeBlogMappings[id];
                             }
-                            return false;
                         });
 
-                        // Only update colors if the cube's state changed
-                        if (wasBlue !== isClosest) {
-                            const color = isClosest ? blueColor : defaultColor;
-                            // Color all vertices of this cube
-                            for (let j = 0; j < 24; j++) {
-                                const idx = i + j;
-                                colors.setXYZ(idx, color.r, color.g, color.b);
+                        blueCubesState.isShowing = false;
+                    } else {
+                        // Show blue cubes
+                        const mergedMesh = scene.children.find(child => 
+                            child.isMesh && child.geometry.attributes.id &&
+                            child.geometry.attributes.id.array.length > 100
+                        );
+
+                        if (!mergedMesh) return;
+
+                        const ids = mergedMesh.geometry.attributes.id.array;
+                        const colors = mergedMesh.geometry.attributes.color;
+                        const positions = mergedMesh.geometry.attributes.position;
+
+                        // Get center positions of all cubes
+                        const cubeCenters = new Map();
+                        for (let i = 0; i < positions.count; i += 24) {
+                            const id = ids[i];
+                            if (id !== 100) { // Skip the green cube
+                                let centerX = 0, centerY = 0, centerZ = 0;
+                                for (let j = 0; j < 24; j++) {
+                                    centerX += positions.array[(i + j) * 3];
+                                    centerY += positions.array[(i + j) * 3 + 1];
+                                    centerZ += positions.array[(i + j) * 3 + 2];
+                                }
+                                centerX /= 24;
+                                centerY /= 24;
+                                centerZ /= 24;
+                                cubeCenters.set(id, new THREE.Vector3(centerX, centerY, centerZ));
                             }
                         }
 
-                        // If it's one of the closest, create a line
-                        if (isClosest) {
-                            const center = cubeCenters.get(id);
-                            const geometry = new THREE.BufferGeometry().setFromPoints([
-                                greenCubePosition,
-                                center
-                            ]);
-                            const material = new THREE.LineBasicMaterial({ 
-                                color: 0xffffff,
-                                opacity: 0.5,
-                                transparent: true
+                        // Get the green cube's position
+                        const greenCubeData = pickingData[100];
+                        if (!greenCubeData) return;
+                        
+                        const greenCubePosition = new THREE.Vector3().copy(greenCubeData.position);
+
+                        // Calculate distances to green cube
+                        const distances = Array.from(cubeCenters.entries()).map(([id, center]) => ({
+                            id,
+                            distance: center.distanceTo(greenCubePosition)
+                        }));
+
+                        // Get 10 closest cubes
+                        const closest = distances
+                            .sort((a, b) => a.distance - b.distance)
+                            .slice(0, 10);
+
+                        const blueColor = new THREE.Color(0x0088ff);
+
+                        // Clear previous state
+                        blueCubesState.connectedCubes.clear();
+
+                        // Color the closest cubes blue and store their state
+                        for (let i = 0; i < positions.count; i += 24) {
+                            const id = ids[i];
+                            const isClosest = closest.some((c, index) => {
+                                if (c.id === id) {
+                                    // Store cube in state with article assignment
+                                    blueCubesState.connectedCubes.add(id);
+                                    blueCubesState.articleAssignments.set(id, index);
+                                    // Assign blog post to this cube
+                                    cubeBlogMappings[id] = {
+                                        ...numberedPosts[index],
+                                        color: 0x0088ff
+                                    };
+                                    return true;
+                                }
+                                return false;
                             });
-                            const line = new THREE.Line(geometry, material);
-                            scene.add(line);
+                            
+                            if (isClosest) {
+                                // Color vertices blue
+                                for (let j = 0; j < 24; j++) {
+                                    const idx = i + j;
+                                    colors.setXYZ(idx, blueColor.r, blueColor.g, blueColor.b);
+                                }
+
+                                // Create connection line
+                                const center = cubeCenters.get(id);
+                                const geometry = new THREE.BufferGeometry().setFromPoints([
+                                    greenCubePosition,
+                                    center
+                                ]);
+                                const material = new THREE.LineBasicMaterial({ 
+                                    color: 0xffffff,
+                                    opacity: 0.5,
+                                    transparent: true
+                                });
+                                const line = new THREE.Line(geometry, material);
+                                scene.add(line);
+                            }
                         }
+                        colors.needsUpdate = true;
+                        blueCubesState.isShowing = true;
                     }
-                    colors.needsUpdate = true;
                 }
             }
+        });
+
+        // Listen for cube destruction events
+        window.addEventListener('cubeDestroyed', (event) => {
+            reallocateDestroyedCube(event.detail.id, event.detail.scene);
         });
 
         // Initialize the scene and setup overlays

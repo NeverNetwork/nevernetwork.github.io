@@ -182,36 +182,38 @@ function destroyCube(id) {
     const data = pickingData[id];
     if (!data) return;
 
+    // Mark cube as destroyed
+    data.destroyed = true;
+
     // Find and remove the original cube from the merged geometry
     scene.traverse((object) => {
         if (object.isMesh && object.geometry.attributes.id) {
             const ids = object.geometry.attributes.id.array;
             const vertices = object.geometry.attributes.position;
             const colors = object.geometry.attributes.color;
-            const indices = object.geometry.index.array;
+            const indices = object.geometry.index ? object.geometry.index.array : null;
             
-            // Find the cube's vertices and hide them
+            // Find the cube's vertices
             for (let i = 0; i < vertices.count; i += 24) {  // 24 vertices per cube
                 if (ids[i] === id) {
-                    // Hide the vertices by scaling them to 0
+                    // Scale vertices to 0 to effectively remove them
                     for (let j = 0; j < 24; j++) {
                         const idx = i + j;
                         vertices.array[idx * 3] = 0;
                         vertices.array[idx * 3 + 1] = 0;
                         vertices.array[idx * 3 + 2] = 0;
                     }
+                    vertices.needsUpdate = true;
+                    
+                    // Create destruction effect
+                    createFragments(data.position, data.scale);
                     break;
                 }
             }
-            vertices.needsUpdate = true;
-            
-            // Create fragments with parameters based on cube ID
-            const destructionType = id % 4; // Use cube ID to determine destruction type
-            createFragments(data.position, data.scale, destructionType);
         }
     });
 
-    // Also hide in picking scene
+    // Also remove from picking scene
     pickingScene.traverse((object) => {
         if (object.isMesh && object.geometry.attributes.id) {
             const ids = object.geometry.attributes.id.array;
@@ -225,15 +227,20 @@ function destroyCube(id) {
                         vertices.array[idx * 3 + 1] = 0;
                         vertices.array[idx * 3 + 2] = 0;
                     }
+                    vertices.needsUpdate = true;
                     break;
                 }
             }
-            vertices.needsUpdate = true;
         }
     });
 
-    // Mark this cube as destroyed
-    pickingData[id].destroyed = true;
+    // Dispatch cube destroyed event
+    window.dispatchEvent(new CustomEvent('cubeDestroyed', {
+        detail: {
+            id: id,
+            scene: scene
+        }
+    }));
 }
 
 function createFragments(position, scale, destructionType = 0) {

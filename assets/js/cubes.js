@@ -744,9 +744,14 @@ function showCubeMenu(screenPosition) {
         menuAuthor.textContent = post.author;
         menuDate.textContent = post.date;
         
-        // Show blog-specific elements
-        menuMetadata.style.display = 'block';
-        readButton.style.display = 'block';
+        // Show blog-specific elements based on cube type
+        if (pickedId === 100) { // Green cube
+            menuMetadata.style.display = 'none';
+            readButton.style.display = 'none';
+        } else { // Blue cubes
+            menuMetadata.style.display = 'block';
+            readButton.style.display = 'block';
+        }
     } else {
         // For regular cubes
         menuTitle.textContent = 'Regular Cube';

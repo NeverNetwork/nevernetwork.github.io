@@ -88,32 +88,52 @@ class Fragment {
 }
 
 function setupOverlays() {
-    setupBlogOverlay();
-    setupCubeMenu();
-    setupHamburgerMenu();
+    // Only set up overlays that exist in the current page
+    if (document.getElementById('blog-overlay')) {
+        setupBlogOverlay();
+    }
+    if (document.getElementById('cube-menu')) {
+        setupCubeMenu();
+    }
+    if (document.querySelector('.hamburger-btn')) {
+        setupHamburgerMenu();
+    }
 }
 
 function setupBlogOverlay() {
     const overlay = document.getElementById('blog-overlay');
-    const closeButton = document.querySelector('.close-button');
+    const closeButton = overlay.querySelector('.close-button');
     
-    closeButton.addEventListener('click', () => {
-        overlay.classList.remove('visible');
-    });
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            overlay.classList.remove('visible');
+        });
+    }
 }
 
 function setupCubeMenu() {
     const menu = document.getElementById('cube-menu');
-    const readButton = document.getElementById('read-button');
+    if (!menu) return;
 
-    readButton.addEventListener('click', () => {
-        closeMenu();
-        showBlogPost();
-    });
+    const readButton = document.getElementById('read-button');
+    const closeButton = menu.querySelector('.menu-close');
+
+    if (readButton) {
+        readButton.addEventListener('click', () => {
+            closeMenu();
+            showBlogPost();
+        });
+    }
+
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            closeMenu();
+        });
+    }
 
     // Close menu when clicking outside both menu and renderer
     document.addEventListener('click', (event) => {
-        if (!menu.contains(event.target) && event.target !== renderer.domElement) {
+        if (menu && !menu.contains(event.target) && event.target !== renderer?.domElement) {
             closeMenu();
         }
     });
@@ -123,6 +143,8 @@ function setupHamburgerMenu() {
     const hamburgerBtn = document.querySelector('.hamburger-btn');
     const slideMenu = document.querySelector('.slide-menu');
     const menuOverlay = document.querySelector('.menu-overlay');
+
+    if (!hamburgerBtn || !slideMenu || !menuOverlay) return;
 
     hamburgerBtn.addEventListener('click', () => {
         slideMenu.classList.toggle('active');
@@ -584,20 +606,19 @@ function onPointerUp(event) {
     if (pickedId === selectedCubeId && currentTime - lastInteractionTime < INTERACTION_TIMEOUT) {
         // Second click on the same cube
         if (pickedId in cubeBlogMappings) {
-            // For cubes with blog mappings, execute their custom second click action
+            // For blog cubes (green), execute their custom second click action
             const mapping = cubeBlogMappings[pickedId];
             if (mapping.onSecondClick) {
+                closeMenu();
                 mapping.onSecondClick(scene.getObjectById(pickedId), scene, getAllCubes());
-            } else {
-                showBlogPost(); // Default action for blog cubes is to show the post
             }
         } else {
             // For regular cubes, destroy them
             destroyCube(pickedId);
+            closeMenu();
         }
-        closeMenu();
     } else {
-        // First click - select the cube and show appropriate menu
+        // First click - select the cube and show menu
         if (menu.style.display === 'block') {
             closeMenu();
         }
@@ -612,19 +633,12 @@ function onPointerUp(event) {
         const highlightScale = data.scale.clone().multiplyScalar(1.1);
         highlightBox.scale.copy(highlightScale);
         
-        // Show appropriate menu based on cube type
+        // Show menu for all cubes using unified function
         const clickPosition = {
             x: event.clientX,
             y: event.clientY
         };
-        
-        if (pickedId in cubeBlogMappings) {
-            // Show blog menu for cubes with blog mappings
-            showCubeMenu(clickPosition);
-        } else {
-            // Show generic menu for regular cubes
-            showGenericCubeMenu(clickPosition);
-        }
+        showCubeMenu(clickPosition);
     }
 }
 
@@ -637,25 +651,6 @@ function getAllCubes() {
         }
     });
     return cubes;
-}
-
-// Function to show generic menu for regular cubes
-function showGenericCubeMenu(screenPosition) {
-    const menu = document.getElementById('cube-menu');
-    const title = menu.querySelector('.menu-title');
-    const brief = menu.querySelector('.menu-brief');
-    const metadata = menu.querySelector('.menu-metadata');
-    const readButton = document.getElementById('read-button');
-
-    title.textContent = 'Regular Cube';
-    brief.textContent = 'Click again to destroy this cube';
-    metadata.style.display = 'none';
-    readButton.style.display = 'none';
-
-    // Position menu near the cube
-    menu.style.left = `${screenPosition.x + 10}px`;
-    menu.style.top = `${screenPosition.y + 10}px`;
-    menu.style.display = 'block';
 }
 
 function pick() {
@@ -736,8 +731,10 @@ function showCubeMenu(screenPosition) {
     const menu = document.getElementById('cube-menu');
     const menuTitle = menu.querySelector('.menu-title');
     const menuBrief = menu.querySelector('.menu-brief');
-    const menuAuthor = menu.querySelector('.menu-metadata .author');
-    const menuDate = menu.querySelector('.menu-metadata .date');
+    const menuMetadata = menu.querySelector('.menu-metadata');
+    const menuAuthor = menuMetadata.querySelector('.author');
+    const menuDate = menuMetadata.querySelector('.date');
+    const readButton = document.getElementById('read-button');
     
     // Set the content from the blog mapping
     if (pickedId in cubeBlogMappings) {
@@ -746,6 +743,16 @@ function showCubeMenu(screenPosition) {
         menuBrief.textContent = post.brief;
         menuAuthor.textContent = post.author;
         menuDate.textContent = post.date;
+        
+        // Show blog-specific elements
+        menuMetadata.style.display = 'block';
+        readButton.style.display = 'block';
+    } else {
+        // For regular cubes
+        menuTitle.textContent = 'Regular Cube';
+        menuBrief.textContent = 'Click again to destroy this cube';
+        menuMetadata.style.display = 'none';
+        readButton.style.display = 'none';
     }
     
     // Make menu visible to get dimensions
@@ -758,90 +765,22 @@ function showCubeMenu(screenPosition) {
     const isMobile = viewportWidth <= 768;
     const menuRect = menu.getBoundingClientRect();
     
-    // Define safe margins and zones
-    const TOP_MARGIN = 80;
-    const EDGE_MARGIN = 20;
-    const SPACING = 20;
-    const CENTER_ZONE_SIZE = 0.4; // 40% of viewport height for center zone
-    const CENTER_OFFSET = 100; // How much to move up in center zone
-    
-    let top;
-    
+    // Position menu
     if (isMobile) {
-        // On mobile, position relative to click but ensure visibility
-        top = screenPosition.y;
+        menu.style.left = '50%';
+        menu.style.top = '50%';
+        menu.style.transform = 'translate(-50%, -50%)';
+    } else {
+        // Position near the cube but ensure it stays within viewport
+        let left = Math.min(Math.max(screenPosition.x, 10), viewportWidth - menuRect.width - 10);
+        let top = Math.min(Math.max(screenPosition.y, 10), viewportHeight - menuRect.height - 10);
         
-        // Check if in vertical center zone
-        const centerZoneTop = viewportHeight * (0.5 - CENTER_ZONE_SIZE / 2);
-        const centerZoneBottom = viewportHeight * (0.5 + CENTER_ZONE_SIZE / 2);
-        const isInCenterZone = screenPosition.y >= centerZoneTop && screenPosition.y <= centerZoneBottom;
-        
-        if (isInCenterZone) {
-            // If in center zone, position menu higher
-            top = Math.max(TOP_MARGIN, screenPosition.y - menuRect.height - CENTER_OFFSET);
-        } else if (top + menuRect.height > viewportHeight - EDGE_MARGIN) {
-            // If would go below viewport, show above click point
-            top = Math.max(TOP_MARGIN, screenPosition.y - menuRect.height - SPACING);
-        }
-        
-        // If still too low, force it to start from TOP_MARGIN
-        if (top + menuRect.height > viewportHeight - EDGE_MARGIN) {
-            top = TOP_MARGIN;
-        }
-        
-        // Apply mobile positioning
+        menu.style.left = `${left}px`;
         menu.style.top = `${top}px`;
         menu.style.transform = 'none';
-        menu.style.left = '20px';
-        menu.style.right = '20px';
-        menu.style.width = 'auto';
-    } else {
-        // Desktop positioning
-        let left;
-        
-        // Horizontal positioning
-        const isInLeftHalf = screenPosition.x < viewportWidth / 2;
-        if (isInLeftHalf) {
-            left = screenPosition.x + SPACING;
-        } else {
-            left = screenPosition.x - menuRect.width - SPACING;
-        }
-        
-        // Check if in vertical center zone
-        const centerZoneTop = viewportHeight * (0.5 - CENTER_ZONE_SIZE / 2);
-        const centerZoneBottom = viewportHeight * (0.5 + CENTER_ZONE_SIZE / 2);
-        const isInCenterZone = screenPosition.y >= centerZoneTop && screenPosition.y <= centerZoneBottom;
-        
-        // Vertical positioning for desktop
-        if (isInCenterZone) {
-            // If in center zone, position menu higher
-            top = Math.max(TOP_MARGIN, screenPosition.y - menuRect.height - CENTER_OFFSET);
-        } else {
-            top = screenPosition.y;
-            if (top + menuRect.height > viewportHeight - EDGE_MARGIN) {
-                top = screenPosition.y - menuRect.height - SPACING;
-            }
-        }
-        
-        // Ensure menu stays within viewport bounds
-        if (left < EDGE_MARGIN) {
-            left = EDGE_MARGIN;
-        } else if (left + menuRect.width > viewportWidth - EDGE_MARGIN) {
-            left = viewportWidth - menuRect.width - EDGE_MARGIN;
-        }
-        
-        if (top < TOP_MARGIN) {
-            top = TOP_MARGIN;
-        }
-        
-        // Apply desktop positioning
-        menu.style.left = `${left}px`;
-        menu.style.right = 'auto';
-        menu.style.width = '';
-        menu.style.top = `${top}px`;
     }
     
-    // Make menu visible
+    // Show menu with fade in
     menu.style.opacity = '1';
 }
 

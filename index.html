@@ -98,6 +98,18 @@ layout: default
     z-index: 1000;
     min-width: 250px;
     max-width: 350px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    #cube-menu {
+        width: calc(100% - 40px);
+        max-width: 350px;
+        min-width: unset;
+        left: 20px;
+        right: 20px;
+        margin: 0 auto;
+    }
 }
 
 #cube-menu .menu-title {
@@ -774,86 +786,100 @@ layout: default
             menuDate.textContent = post.date;
         }
         
-        // Make menu visible but off-screen to measure its dimensions
+        // Make menu visible to get dimensions
         menu.style.display = 'block';
-        menu.style.left = '-9999px';
-        menu.style.top = '-9999px';
+        menu.style.opacity = '0';
         
-        // Get menu dimensions
-        const menuRect = menu.getBoundingClientRect();
+        // Get dimensions and viewport info
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
+        const isMobile = viewportWidth <= 768;
+        const menuRect = menu.getBoundingClientRect();
         
-        // Define breakpoint for small screens
-        const SMALL_SCREEN_BREAKPOINT = 768; // typical tablet/mobile breakpoint
-        const isSmallScreen = viewportWidth <= SMALL_SCREEN_BREAKPOINT;
+        // Define safe margins and zones
+        const TOP_MARGIN = 80;
+        const EDGE_MARGIN = 20;
+        const SPACING = 20;
+        const CENTER_ZONE_SIZE = 0.4; // 40% of viewport height for center zone
+        const CENTER_OFFSET = 100; // How much to move up in center zone
         
-        // Define safe margins
-        const TOP_MARGIN = 80; // Space for the upper menu
-        const EDGE_MARGIN = 20; // Increased from 10
-        const SPACING = 40; // Increased from 20
-        const BLOG_CONTENT_SPACING = 60; // Extra spacing for blog content area
-        
-        // Define center zone boundaries (expanded vertical zone)
-        const centerZoneLeft = viewportWidth * 0.4;
-        const centerZoneRight = viewportWidth * 0.6;
-        const centerZoneTop = viewportHeight * 0.3;
-        const centerZoneBottom = viewportHeight * 0.7;
-        
-        // Check if cube is in center zone
-        const isInCenterZone = screenPosition.x > centerZoneLeft && 
-                              screenPosition.x < centerZoneRight &&
-                              screenPosition.y > centerZoneTop &&
-                              screenPosition.y < centerZoneBottom;
-        
-        // Calculate vertical center offset
-        const verticalCenter = viewportHeight / 2;
-        const menuHalfHeight = menuRect.height / 2;
-        
-        // Calculate optimal position
-        let left;
         let top;
-
-        // Horizontal positioning
-        if (isSmallScreen) {
-            // Center horizontally on small screens
-            left = (viewportWidth - menuRect.width) / 2;
+        
+        if (isMobile) {
+            // On mobile, position relative to click but ensure visibility
+            top = screenPosition.y;
+            
+            // Check if in vertical center zone
+            const centerZoneTop = viewportHeight * (0.5 - CENTER_ZONE_SIZE / 2);
+            const centerZoneBottom = viewportHeight * (0.5 + CENTER_ZONE_SIZE / 2);
+            const isInCenterZone = screenPosition.y >= centerZoneTop && screenPosition.y <= centerZoneBottom;
+            
+            if (isInCenterZone) {
+                // If in center zone, position menu higher
+                top = Math.max(TOP_MARGIN, screenPosition.y - menuRect.height - CENTER_OFFSET);
+            } else if (top + menuRect.height > viewportHeight - EDGE_MARGIN) {
+                // If would go below viewport, show above click point
+                top = Math.max(TOP_MARGIN, screenPosition.y - menuRect.height - SPACING);
+            }
+            
+            // If still too low, force it to start from TOP_MARGIN
+            if (top + menuRect.height > viewportHeight - EDGE_MARGIN) {
+                top = TOP_MARGIN;
+            }
+            
+            // Apply mobile positioning
+            menu.style.top = `${top}px`;
+            menu.style.transform = 'none';
+            menu.style.left = '20px';
+            menu.style.right = '20px';
+            menu.style.width = 'auto';
         } else {
-            // Normal positioning on larger screens
+            // Desktop positioning
+            let left;
+            
+            // Horizontal positioning
             const isInLeftHalf = screenPosition.x < viewportWidth / 2;
             if (isInLeftHalf) {
-                left = screenPosition.x + BLOG_CONTENT_SPACING;
+                left = screenPosition.x + SPACING;
             } else {
-                left = screenPosition.x - menuRect.width - BLOG_CONTENT_SPACING;
+                left = screenPosition.x - menuRect.width - SPACING;
             }
+            
+            // Check if in vertical center zone
+            const centerZoneTop = viewportHeight * (0.5 - CENTER_ZONE_SIZE / 2);
+            const centerZoneBottom = viewportHeight * (0.5 + CENTER_ZONE_SIZE / 2);
+            const isInCenterZone = screenPosition.y >= centerZoneTop && screenPosition.y <= centerZoneBottom;
+            
+            // Vertical positioning for desktop
+            if (isInCenterZone) {
+                // If in center zone, position menu higher
+                top = Math.max(TOP_MARGIN, screenPosition.y - menuRect.height - CENTER_OFFSET);
+            } else {
+                top = screenPosition.y;
+                if (top + menuRect.height > viewportHeight - EDGE_MARGIN) {
+                    top = screenPosition.y - menuRect.height - SPACING;
+                }
+            }
+            
+            // Ensure menu stays within viewport bounds
+            if (left < EDGE_MARGIN) {
+                left = EDGE_MARGIN;
+            } else if (left + menuRect.width > viewportWidth - EDGE_MARGIN) {
+                left = viewportWidth - menuRect.width - EDGE_MARGIN;
+            }
+            
+            if (top < TOP_MARGIN) {
+                top = TOP_MARGIN;
+            }
+            
+            // Apply desktop positioning
+            menu.style.left = `${left}px`;
+            menu.style.right = 'auto';
+            menu.style.width = '';
+            menu.style.top = `${top}px`;
         }
         
-        // Vertical positioning - try to stay close to vertical center
-        if (isInCenterZone) {
-            // In center zone, align with vertical center
-            top = verticalCenter - menuHalfHeight;
-        } else {
-            // Outside center zone, position relative to click but bias towards center
-            const distanceFromCenter = screenPosition.y - verticalCenter;
-            const bias = 0.3; // Reduce the offset from center by this factor
-            top = verticalCenter + (distanceFromCenter * bias) - menuHalfHeight;
-        }
-        
-        // Ensure menu stays within viewport bounds and below top menu
-        if (left < EDGE_MARGIN) {
-            left = EDGE_MARGIN;
-        } else if (left + menuRect.width > viewportWidth - EDGE_MARGIN) {
-            left = viewportWidth - menuRect.width - EDGE_MARGIN;
-        }
-        
-        if (top < TOP_MARGIN) {
-            top = TOP_MARGIN;
-        } else if (top + menuRect.height > viewportHeight - EDGE_MARGIN) {
-            top = viewportHeight - menuRect.height - EDGE_MARGIN;
-        }
-        
-        // Apply final position
-        menu.style.left = `${left}px`;
-        menu.style.top = `${top}px`;
+        // Make menu visible
+        menu.style.opacity = '1';
     }
 </script> 

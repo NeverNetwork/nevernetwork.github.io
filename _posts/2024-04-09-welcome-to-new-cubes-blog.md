@@ -2,6 +2,8 @@
 layout: post
 title: "Welcome to the Interactive Cubes Blog"
 date: 2024-04-09
+author: "Sergy S."
+brief: "Explore the world of interactive 3D web graphics through this unique cube-based interface. Click to discover more about Three.js and creative coding."
 ---
 
 # Welcome to the Interactive Cubes Blog!

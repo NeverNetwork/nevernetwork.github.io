@@ -51,6 +51,7 @@
 <title>Welcome to the Interactive Cubes Blog | New Cubes Blog</title>
 <meta name="generator" content="Jekyll v4.3.4" />
 <meta property="og:title" content="Welcome to the Interactive Cubes Blog" />
+<meta name="author" content="Sergy S." />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Welcome to the Interactive Cubes Blog!" />
 <meta property="og:description" content="Welcome to the Interactive Cubes Blog!" />
@@ -62,7 +63,7 @@
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Welcome to the Interactive Cubes Blog" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-04-09T00:00:00+03:00","datePublished":"2024-04-09T00:00:00+03:00","description":"Welcome to the Interactive Cubes Blog!","headline":"Welcome to the Interactive Cubes Blog","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog/"},"url":"http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog/"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Sergy S."},"dateModified":"2024-04-09T00:00:00+03:00","datePublished":"2024-04-09T00:00:00+03:00","description":"Welcome to the Interactive Cubes Blog!","headline":"Welcome to the Interactive Cubes Blog","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog/"},"url":"http://localhost:4000/blog/2024/04/09/welcome-to-new-cubes-blog/"}</script>
 <!-- End Jekyll SEO tag -->
 
 </head>
@@ -141,6 +142,16 @@
     </div>
 </div>
 
+<div id="cube-menu">
+    <div class="menu-title"></div>
+    <div class="menu-brief"></div>
+    <div class="menu-metadata">
+        <span class="author"></span>
+        <span class="date"></span>
+    </div>
+    <button id="read-button">Read</button>
+</div>
+
 <style>
 #container {
     position: fixed;
@@ -201,6 +212,64 @@
 .close-button:hover {
     background: #e0e0e0;
 }
+
+#cube-menu {
+    display: none;
+    position: fixed;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 1000;
+    min-width: 250px;
+    max-width: 350px;
+}
+
+#cube-menu .menu-title {
+    color: white;
+    font-size: 18px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+#cube-menu .menu-brief {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+#cube-menu .menu-metadata {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    margin-bottom: 15px;
+    line-height: 1.4;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 12px;
+}
+
+#cube-menu .menu-metadata span {
+    display: block;
+}
+
+#cube-menu button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 0 auto;
+    border: none;
+    border-radius: 5px;
+    background: #ff3333;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.3s;
+    text-align: center;
+}
+
+#cube-menu button:hover {
+    background: #cc0000;
+}
 </style>
 
 <script type="importmap">
@@ -241,13 +310,22 @@
     
     function startAutoRotation() {
         autoRotating = true;
+        // Close menu when auto-rotation starts
+        closeMenu();
     }
     
     function stopAutoRotation() {
         autoRotating = false;
         lastInteractionTime = Date.now();
     }
-    
+
+    function closeMenu() {
+        const menu = document.getElementById('cube-menu');
+        menu.style.display = 'none';
+        selectedCubeId = -1;
+        highlightBox.visible = false;
+    }
+
     function checkInactivity() {
         if (!autoRotating && Date.now() - lastInteractionTime > INACTIVITY_TIMEOUT) {
             startAutoRotation();
@@ -284,6 +362,9 @@
     const cubeBlogMappings = {
         42: {
             title: "Welcome to the Interactive Cubes Blog",
+            author: "Sergy S.",
+            date: "April 9, 2024",
+            brief: "Explore the world of interactive 3D web graphics through this unique cube-based interface. Click to discover more about Three.js and creative coding.",
             url: "/blog/2024/04/09/welcome-to-new-cubes-blog/",
             color: 0xff0000
         }
@@ -291,7 +372,12 @@
     };
 
     init();
-    setupBlogOverlay();
+    setupOverlays();
+
+    function setupOverlays() {
+        setupBlogOverlay();
+        setupCubeMenu();
+    }
 
     function setupBlogOverlay() {
         const overlay = document.getElementById('blog-overlay');
@@ -299,6 +385,23 @@
         
         closeButton.addEventListener('click', () => {
             overlay.classList.remove('visible');
+        });
+    }
+
+    function setupCubeMenu() {
+        const menu = document.getElementById('cube-menu');
+        const readButton = document.getElementById('read-button');
+
+        readButton.addEventListener('click', () => {
+            closeMenu();
+            showBlogPost();
+        });
+
+        // Close menu when clicking outside both menu and renderer
+        document.addEventListener('click', (event) => {
+            if (!menu.contains(event.target) && event.target !== renderer.domElement) {
+                closeMenu();
+            }
         });
     }
 
@@ -637,6 +740,11 @@
             stopAutoRotation();
         });
 
+        // Add change event listener to close menu when camera moves
+        controls.addEventListener('change', () => {
+            closeMenu();
+        });
+
         // Single event listener for pointer down
         renderer.domElement.addEventListener('pointerdown', onPointerDown);
         window.addEventListener('resize', onWindowResize);
@@ -664,22 +772,27 @@
         pick();
 
         const currentTime = Date.now();
+        const menu = document.getElementById('cube-menu');
         
         if (pickedId !== -1 && !pickingData[pickedId]?.destroyed) {
             if (pickedId === selectedCubeId && currentTime - lastInteractionTime < INTERACTION_TIMEOUT) {
-                // Second click on the same cube - perform action
+                // Second click on the same cube - show menu at click position
                 if (pickedId in cubeBlogMappings) {
-                    // For blog cubes, show the post
-                    showBlogPost();
+                    const clickPosition = {
+                        x: event.clientX,
+                        y: event.clientY
+                    };
+                    showCubeMenu(clickPosition);
                 } else {
                     // For regular cubes, destroy them
                     destroyCube(pickedId);
+                    closeMenu();
                 }
-                // Reset selection
-                selectedCubeId = -1;
-                highlightBox.visible = false;
             } else {
                 // First click - select the cube
+                if (menu.style.display === 'block') {
+                    closeMenu();
+                }
                 selectedCubeId = pickedId;
                 lastInteractionTime = currentTime;
                 
@@ -692,9 +805,10 @@
                 highlightBox.scale.copy(highlightScale);
             }
         } else {
-            // Clicked empty space or destroyed cube - deselect
-            selectedCubeId = -1;
-            highlightBox.visible = false;
+            // Clicked empty space or destroyed cube - deselect and hide menu
+            if (!menu.contains(event.target)) {
+                closeMenu();
+            }
         }
     }
 
@@ -766,6 +880,98 @@
         }
         
         renderer.render(scene, camera);
+    }
+
+    function showCubeMenu(screenPosition) {
+        const menu = document.getElementById('cube-menu');
+        const menuTitle = menu.querySelector('.menu-title');
+        const menuBrief = menu.querySelector('.menu-brief');
+        const menuAuthor = menu.querySelector('.menu-metadata .author');
+        const menuDate = menu.querySelector('.menu-metadata .date');
+        
+        // Set the content from the blog mapping
+        if (pickedId in cubeBlogMappings) {
+            const post = cubeBlogMappings[pickedId];
+            menuTitle.textContent = post.title;
+            menuBrief.textContent = post.brief;
+            menuAuthor.textContent = post.author;
+            menuDate.textContent = post.date;
+        }
+        
+        // Make menu visible but off-screen to measure its dimensions
+        menu.style.display = 'block';
+        menu.style.left = '-9999px';
+        menu.style.top = '-9999px';
+        
+        // Get menu dimensions
+        const menuRect = menu.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Define safe margins
+        const TOP_MARGIN = 80; // Space for the upper menu
+        const EDGE_MARGIN = 10;
+        const SPACING = 20;
+        
+        // Define center zone boundaries (expanded vertical zone)
+        const centerZoneLeft = viewportWidth * 0.4;
+        const centerZoneRight = viewportWidth * 0.6;
+        const centerZoneTop = viewportHeight * 0.3;    // Expanded vertical center zone
+        const centerZoneBottom = viewportHeight * 0.7; // Expanded vertical center zone
+        
+        // Check if cube is in center zone
+        const isInCenterZone = screenPosition.x > centerZoneLeft && 
+                              screenPosition.x < centerZoneRight &&
+                              screenPosition.y > centerZoneTop &&
+                              screenPosition.y < centerZoneBottom;
+        
+        // Determine if cube is in left/right half of screen
+        const isInLeftHalf = screenPosition.x < viewportWidth / 2;
+        
+        // Calculate vertical center offset
+        const verticalCenter = viewportHeight / 2;
+        const menuHalfHeight = menuRect.height / 2;
+        
+        // Calculate optimal position
+        let left;
+        let top;
+
+        // Horizontal positioning
+        if (isInLeftHalf) {
+            // Cube is on left, show menu on right
+            left = screenPosition.x + SPACING;
+        } else {
+            // Cube is on right, show menu on left
+            left = screenPosition.x - menuRect.width - SPACING;
+        }
+        
+        // Vertical positioning - try to stay close to vertical center
+        if (isInCenterZone) {
+            // In center zone, align with vertical center
+            top = verticalCenter - menuHalfHeight;
+        } else {
+            // Outside center zone, position relative to click but bias towards center
+            const distanceFromCenter = screenPosition.y - verticalCenter;
+            const bias = 0.3; // Reduce the offset from center by this factor
+            top = verticalCenter + (distanceFromCenter * bias) - menuHalfHeight;
+        }
+        
+        // Ensure menu stays within viewport bounds and below top menu
+        if (left < EDGE_MARGIN) {
+            left = EDGE_MARGIN;
+        } else if (left + menuRect.width > viewportWidth - EDGE_MARGIN) {
+            left = viewportWidth - menuRect.width - EDGE_MARGIN;
+        }
+        
+        if (top < TOP_MARGIN) {
+            top = TOP_MARGIN;
+        } else if (top + menuRect.height > viewportHeight - EDGE_MARGIN) {
+            top = viewportHeight - menuRect.height - EDGE_MARGIN;
+        }
+        
+        // Apply final position
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
     }
 </script> 
         </div>

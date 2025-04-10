@@ -20,7 +20,9 @@ const offset = new THREE.Vector3(10, 10, 10);
 const clearColor = new THREE.Color();
 let lastClickedCube = null;
 let lastClickTime = 0;
-const DOUBLE_CLICK_DELAY = 500; // ms
+let pointerStartPosition = new THREE.Vector2();
+let hasMoved = false;
+const MOVE_THRESHOLD = 5; // pixels
 
 // Export constants and mappings
 export const cubeBlogMappings = {};
@@ -505,8 +507,10 @@ function init() {
         closeMenu();
     });
 
-    // Single event listener for pointer down
-    renderer.domElement.addEventListener('pointerdown', onPointerDown);
+    // Update event listeners
+    container.addEventListener('pointerdown', onPointerStart);
+    container.addEventListener('pointermove', onPointerMove);
+    container.addEventListener('pointerup', onPointerUp);
     window.addEventListener('resize', onWindowResize);
 }
 
@@ -516,10 +520,36 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function onPointerDown(event) {
+function onPointerStart(event) {
     event.preventDefault();
     stopAutoRotation();
     
+    // Store initial pointer position
+    pointerStartPosition.x = event.clientX;
+    pointerStartPosition.y = event.clientY;
+    hasMoved = false;
+}
+
+function onPointerMove(event) {
+    // Check if user has moved beyond threshold
+    if (!hasMoved) {
+        const dx = event.clientX - pointerStartPosition.x;
+        const dy = event.clientY - pointerStartPosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > MOVE_THRESHOLD) {
+            hasMoved = true;
+        }
+    }
+}
+
+function onPointerUp(event) {
+    event.preventDefault();
+    
+    // If user moved significantly, don't process the click
+    if (hasMoved) {
+        return;
+    }
+
     // Get pointer coordinates
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;

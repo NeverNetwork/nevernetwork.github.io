@@ -195,22 +195,30 @@
 }
 
 .close-button {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    font-size: 1.5rem;
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    font-size: 18px;
     cursor: pointer;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: #f0f0f0;
+    background: rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 0.9);
+    z-index: 1000;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
 }
 
 .close-button:hover {
-    background: #e0e0e0;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 #cube-menu {
@@ -908,25 +916,27 @@
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         
+        // Define breakpoint for small screens
+        const SMALL_SCREEN_BREAKPOINT = 768; // typical tablet/mobile breakpoint
+        const isSmallScreen = viewportWidth <= SMALL_SCREEN_BREAKPOINT;
+        
         // Define safe margins
         const TOP_MARGIN = 80; // Space for the upper menu
-        const EDGE_MARGIN = 10;
-        const SPACING = 20;
+        const EDGE_MARGIN = 20; // Increased from 10
+        const SPACING = 40; // Increased from 20
+        const BLOG_CONTENT_SPACING = 60; // Extra spacing for blog content area
         
         // Define center zone boundaries (expanded vertical zone)
         const centerZoneLeft = viewportWidth * 0.4;
         const centerZoneRight = viewportWidth * 0.6;
-        const centerZoneTop = viewportHeight * 0.3;    // Expanded vertical center zone
-        const centerZoneBottom = viewportHeight * 0.7; // Expanded vertical center zone
+        const centerZoneTop = viewportHeight * 0.3;
+        const centerZoneBottom = viewportHeight * 0.7;
         
         // Check if cube is in center zone
         const isInCenterZone = screenPosition.x > centerZoneLeft && 
                               screenPosition.x < centerZoneRight &&
                               screenPosition.y > centerZoneTop &&
                               screenPosition.y < centerZoneBottom;
-        
-        // Determine if cube is in left/right half of screen
-        const isInLeftHalf = screenPosition.x < viewportWidth / 2;
         
         // Calculate vertical center offset
         const verticalCenter = viewportHeight / 2;
@@ -937,12 +947,17 @@
         let top;
 
         // Horizontal positioning
-        if (isInLeftHalf) {
-            // Cube is on left, show menu on right
-            left = screenPosition.x + SPACING;
+        if (isSmallScreen) {
+            // Center horizontally on small screens
+            left = (viewportWidth - menuRect.width) / 2;
         } else {
-            // Cube is on right, show menu on left
-            left = screenPosition.x - menuRect.width - SPACING;
+            // Normal positioning on larger screens
+            const isInLeftHalf = screenPosition.x < viewportWidth / 2;
+            if (isInLeftHalf) {
+                left = screenPosition.x + BLOG_CONTENT_SPACING;
+            } else {
+                left = screenPosition.x - menuRect.width - BLOG_CONTENT_SPACING;
+            }
         }
         
         // Vertical positioning - try to stay close to vertical center

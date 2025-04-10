@@ -55,7 +55,81 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { init, setupOverlays, cubeBlogMappings, resetCubeColors } from '/assets/js/cubes.js';
+        import { init, setupOverlays, cubeBlogMappings, resetCubeColors, pickingData } from '/assets/js/cubes.js';
+
+        // Create 10 numbered blog posts
+        const numberedPosts = [
+            {
+                title: "1. Introduction to Three.js",
+                brief: "Getting started with 3D graphics on the web",
+                author: "Cube Author",
+                date: "2024-04-10",
+                content: "This is a stub post about Three.js basics."
+            },
+            {
+                title: "2. Advanced Camera Controls",
+                brief: "Mastering camera movements in Three.js",
+                author: "Cube Author",
+                date: "2024-04-11",
+                content: "This is a stub post about camera controls."
+            },
+            {
+                title: "3. Shader Programming",
+                brief: "Creating custom shaders in WebGL",
+                author: "Cube Author",
+                date: "2024-04-12",
+                content: "This is a stub post about shader programming."
+            },
+            {
+                title: "4. Particle Systems",
+                brief: "Building dynamic particle effects",
+                author: "Cube Author",
+                date: "2024-04-13",
+                content: "This is a stub post about particle systems."
+            },
+            {
+                title: "5. Physics Simulations",
+                brief: "Implementing basic physics in Three.js",
+                author: "Cube Author",
+                date: "2024-04-14",
+                content: "This is a stub post about physics simulations."
+            },
+            {
+                title: "6. Post-processing Effects",
+                brief: "Adding visual effects to 3D scenes",
+                author: "Cube Author",
+                date: "2024-04-15",
+                content: "This is a stub post about post-processing."
+            },
+            {
+                title: "7. Performance Optimization",
+                brief: "Optimizing Three.js applications",
+                author: "Cube Author",
+                date: "2024-04-16",
+                content: "This is a stub post about optimization techniques."
+            },
+            {
+                title: "8. Interactive 3D UI",
+                brief: "Creating user interfaces in 3D space",
+                author: "Cube Author",
+                date: "2024-04-17",
+                content: "This is a stub post about 3D UI design."
+            },
+            {
+                title: "9. Custom Geometries",
+                brief: "Building complex 3D shapes",
+                author: "Cube Author",
+                date: "2024-04-18",
+                content: "This is a stub post about custom geometries."
+            },
+            {
+                title: "10. Animation Techniques",
+                brief: "Advanced animation in Three.js",
+                author: "Cube Author",
+                date: "2024-04-19",
+                content: "This is a stub post about animation techniques."
+            }
+        ];
 
         // Set up the green cube mapping
         Object.assign(cubeBlogMappings, {
@@ -107,10 +181,16 @@
                         }
                     }
 
+                    // Get the green cube's position from pickingData
+                    const greenCubeData = pickingData[100];
+                    if (!greenCubeData) return;
+                    
+                    const greenCubePosition = new THREE.Vector3().copy(greenCubeData.position);
+
                     // Calculate distances to green cube
                     const distances = Array.from(cubeCenters.entries()).map(([id, center]) => ({
                         id,
-                        distance: center.distanceTo(cube.position)
+                        distance: center.distanceTo(greenCubePosition)
                     }));
 
                     // Get 10 closest cubes
@@ -118,13 +198,31 @@
                         .sort((a, b) => a.distance - b.distance)
                         .slice(0, 10);
 
-                    // Color the closest cubes blue
+                    // Color the closest cubes blue and assign blog posts
                     const blueColor = new THREE.Color(0x0088ff);
                     const grayColor = new THREE.Color(0x808080);
 
+                    // Clear any previous blog mappings for blue cubes
+                    Object.keys(cubeBlogMappings).forEach(key => {
+                        if (key !== '100') {
+                            delete cubeBlogMappings[key];
+                        }
+                    });
+
                     for (let i = 0; i < positions.count; i += 24) {
                         const id = ids[i];
-                        const isClosest = closest.some(c => c.id === id);
+                        const isClosest = closest.some((c, index) => {
+                            if (c.id === id) {
+                                // Assign blog post to this cube
+                                cubeBlogMappings[id] = {
+                                    ...numberedPosts[index],
+                                    color: 0x0088ff
+                                };
+                                return true;
+                            }
+                            return false;
+                        });
+                        
                         const color = isClosest ? blueColor : grayColor;
                         
                         // Color all vertices of this cube
@@ -137,7 +235,7 @@
                         if (isClosest) {
                             const center = cubeCenters.get(id);
                             const geometry = new THREE.BufferGeometry().setFromPoints([
-                                cube.position,
+                                greenCubePosition,
                                 center
                             ]);
                             const material = new THREE.LineBasicMaterial({ 

@@ -15,7 +15,6 @@ let lastTime = 0;
 let autoRotating = true;
 const fragments = [];
 const gravity = new THREE.Vector3(0, -0.015, 0);
-const pickingData = [];
 const pointer = new THREE.Vector2();
 const offset = new THREE.Vector3(10, 10, 10);
 const clearColor = new THREE.Color();
@@ -28,6 +27,7 @@ export const cubeBlogMappings = {};
 export const INTERACTION_TIMEOUT = 500;
 export const INACTIVITY_TIMEOUT = 10000;
 export const AUTO_ROTATION_SPEED = 0.2;
+export const pickingData = [];
 
 // Export functions
 export { init, setupOverlays, startAutoRotation, stopAutoRotation, closeMenu, checkInactivity, showBlogPost, destroyCube, showCubeMenu, resetCubeColors };
@@ -151,37 +151,29 @@ function showBlogPost() {
                     </p>
                 </header>
                 <div class="post-content">
-                    <h1>${post.title}</h1>
                     <p>${post.brief}</p>
-                    
-                    <h2>About This Project</h2>
-                    <p>This blog combines interactive 3D visualizations with written content. The main page features thousands of floating cubes, with special cubes that lead to blog posts. This interaction demonstrates the power of Three.js for creating engaging web experiences.</p>
-                    
-                    <h2>How It Works</h2>
-                    <p>The cube visualization you just interacted with uses several advanced Three.js features:</p>
-                    <ol>
-                        <li><strong>GPU Picking</strong> - To detect which cube you're hovering over</li>
-                        <li><strong>Custom Shaders</strong> - For efficient rendering of thousands of cubes</li>
-                        <li><strong>TrackballControls</strong> - For smooth camera movement</li>
-                        <li><strong>Merged Geometries</strong> - For optimal performance</li>
-                    </ol>
-                    
-                    <h2>Stay Connected</h2>
-                    <p>Keep exploring the cubes and check back for more posts about:</p>
-                    <ul>
-                        <li>Three.js tutorials</li>
-                        <li>WebGL optimization tips</li>
-                        <li>Creative coding techniques</li>
-                        <li>Interactive web experiences</li>
-                    </ul>
+                    ${post.content || ''}
                 </div>
             </article>
         `;
         
         blogText.innerHTML = content;
-        blogOverlay.classList.remove('hidden');
-        blogOverlay.classList.add('visible');
+    } else {
+        // Show "no post assigned" message
+        blogText.innerHTML = `
+            <article class="post">
+                <header class="post-header">
+                    <h1 class="post-title">No Post Assigned</h1>
+                </header>
+                <div class="post-content">
+                    <p>This cube doesn't have a blog post assigned to it yet. Check back later for new content!</p>
+                </div>
+            </article>
+        `;
     }
+    
+    blogOverlay.classList.remove('hidden');
+    blogOverlay.classList.add('visible');
 }
 
 function destroyCube(id) {
@@ -555,32 +547,20 @@ function onPointerDown(event) {
     if (pickedId === selectedCubeId && currentTime - lastInteractionTime < INTERACTION_TIMEOUT) {
         // Second click on the same cube
         if (pickedId in cubeBlogMappings) {
+            // For cubes with blog mappings, execute their custom second click action
             const mapping = cubeBlogMappings[pickedId];
             if (mapping.onSecondClick) {
-                // Find all meshes in the scene
-                const allCubes = [];
-                scene.traverse((object) => {
-                    if (object.isMesh && object.geometry.attributes.id) {
-                        allCubes.push(object);
-                    }
-                });
-                
-                // Get the clicked cube
-                const clickedCube = scene.getObjectById(pickedId) || allCubes.find(cube => 
-                    cube.geometry.attributes.id.array[0] === pickedId
-                );
-                
-                if (clickedCube) {
-                    mapping.onSecondClick(clickedCube, scene, allCubes);
-                }
+                mapping.onSecondClick(scene.getObjectById(pickedId), scene, getAllCubes());
+            } else {
+                showBlogPost(); // Default action for blog cubes is to show the post
             }
-            closeMenu(); // Close any open menu
         } else {
+            // For regular cubes, destroy them
             destroyCube(pickedId);
-            closeMenu();
         }
+        closeMenu();
     } else {
-        // First click - select the cube
+        // First click - select the cube and show appropriate menu
         if (menu.style.display === 'block') {
             closeMenu();
         }
@@ -595,15 +575,50 @@ function onPointerDown(event) {
         const highlightScale = data.scale.clone().multiplyScalar(1.1);
         highlightBox.scale.copy(highlightScale);
         
-        // Show menu only on first click for blog cubes
+        // Show appropriate menu based on cube type
+        const clickPosition = {
+            x: event.clientX,
+            y: event.clientY
+        };
+        
         if (pickedId in cubeBlogMappings) {
-            const clickPosition = {
-                x: event.clientX,
-                y: event.clientY
-            };
+            // Show blog menu for cubes with blog mappings
             showCubeMenu(clickPosition);
+        } else {
+            // Show generic menu for regular cubes
+            showGenericCubeMenu(clickPosition);
         }
     }
+}
+
+// Helper function to get all cubes in the scene
+function getAllCubes() {
+    const cubes = [];
+    scene.traverse((object) => {
+        if (object.isMesh && object.geometry.attributes.id) {
+            cubes.push(object);
+        }
+    });
+    return cubes;
+}
+
+// Function to show generic menu for regular cubes
+function showGenericCubeMenu(screenPosition) {
+    const menu = document.getElementById('cube-menu');
+    const title = menu.querySelector('.menu-title');
+    const brief = menu.querySelector('.menu-brief');
+    const metadata = menu.querySelector('.menu-metadata');
+    const readButton = document.getElementById('read-button');
+
+    title.textContent = 'Regular Cube';
+    brief.textContent = 'Click again to destroy this cube';
+    metadata.style.display = 'none';
+    readButton.style.display = 'none';
+
+    // Position menu near the cube
+    menu.style.left = `${screenPosition.x + 10}px`;
+    menu.style.top = `${screenPosition.y + 10}px`;
+    menu.style.display = 'block';
 }
 
 function pick() {

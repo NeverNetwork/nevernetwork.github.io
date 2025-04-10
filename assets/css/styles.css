@@ -1,0 +1,300 @@
+#container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#blog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#blog-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.blog-content {
+    background: white;
+    padding: 2rem;
+    padding-top: 3rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 18px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 0.9);
+    z-index: 1000;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+}
+
+.close-button:hover {
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Blog Post Styles */
+.post {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+.post-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1rem;
+}
+
+.post-title {
+    font-size: 2.5rem;
+    margin: 0 0 1rem;
+    color: #222;
+    line-height: 1.2;
+}
+
+.post-meta {
+    font-size: 0.9rem;
+    color: #666;
+    display: flex;
+    gap: 1rem;
+}
+
+.post-author {
+    font-weight: 500;
+}
+
+.post-content {
+    font-size: 1.1rem;
+}
+
+.post-content h1 {
+    font-size: 2rem;
+    margin: 2rem 0 1rem;
+    color: #222;
+}
+
+.post-content h2 {
+    font-size: 1.5rem;
+    margin: 1.5rem 0 1rem;
+    color: #333;
+}
+
+.post-content p {
+    margin: 1rem 0;
+}
+
+.post-content ul,
+.post-content ol {
+    margin: 1rem 0;
+    padding-left: 2rem;
+}
+
+.post-content li {
+    margin: 0.5rem 0;
+}
+
+.post-content strong {
+    color: #222;
+    font-weight: 600;
+}
+
+/* Cube Menu Styles */
+#cube-menu {
+    display: none;
+    position: fixed;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 1000;
+    min-width: 250px;
+    max-width: 350px;
+    box-sizing: border-box;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    #cube-menu {
+        width: calc(100% - 40px);
+        max-width: 350px;
+        min-width: unset;
+        left: 20px;
+        right: 20px;
+        margin: 0 auto;
+    }
+    
+    .post-title {
+        font-size: 2rem;
+    }
+    
+    .post-content {
+        font-size: 1rem;
+    }
+}
+
+#cube-menu .menu-title {
+    font-size: 18px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+#cube-menu .menu-brief {
+    font-size: 14px;
+    margin-bottom: 12px;
+    line-height: 1.5;
+    opacity: 0.9;
+}
+
+#cube-menu .menu-metadata {
+    font-size: 12px;
+    margin-bottom: 15px;
+    opacity: 0.7;
+    display: flex;
+    gap: 10px;
+}
+
+#read-button {
+    width: 100%;
+    padding: 8px;
+    background: #ff3366;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+#read-button:hover {
+    background: #ff1a4d;
+}
+
+#cube-menu button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 0 auto;
+    border: none;
+    border-radius: 5px;
+    background: #ff3333;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.3s;
+    text-align: center;
+}
+
+#cube-menu button:hover {
+    background: #cc0000;
+}
+
+.hamburger-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.8);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.hamburger-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.hamburger-btn span {
+    color: white;
+    font-size: 24px;
+}
+
+.slide-menu {
+    position: fixed;
+    top: 0;
+    right: -300px;
+    width: 300px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1001;
+    transition: right 0.3s ease;
+    padding: 80px 30px 30px;
+    visibility: hidden;
+}
+
+.slide-menu.active {
+    right: 0;
+    visibility: visible;
+}
+
+.slide-menu a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: color 0.3s;
+}
+
+.slide-menu a:hover {
+    color: #ff3333;
+}
+
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+} 
